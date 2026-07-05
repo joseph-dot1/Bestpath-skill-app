@@ -67,7 +67,7 @@ working professionals you won't find on YouTube.
 |---|---|---|
 | M0 | Foundation — scaffold, schema + RLS, auth, dark UI shell | ✅ |
 | M1 | Adaptive assessment → learner profile | ✅ |
-| M2 | Roadmap skeleton generation + overview UI + weekly plan | ⬜ |
+| M2 | Roadmap skeleton generation + overview UI + weekly plan | ✅ |
 | M3 | Resource pipeline (YouTube verify + rank) + module UI | ⬜ |
 | M4 | Learning loop — quizzes, checkpoints, progress | ⬜ |
 | M5 | Retention — dashboard, replan, email nudges, events | ⬜ |

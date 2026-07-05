@@ -7,7 +7,7 @@ import {
 } from "@/lib/supabase/config";
 
 // Routes that require a signed-in user.
-const PROTECTED_PREFIXES = ["/dashboard", "/assessment", "/admin"];
+const PROTECTED_PREFIXES = ["/dashboard", "/assessment", "/skills", "/admin"];
 
 export default async function proxy(request: NextRequest) {
   if (!isSupabaseConfigured) return NextResponse.next();

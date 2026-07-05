@@ -42,7 +42,8 @@ export function AssessmentFlow({
           setPhase({ name: "error", message: data.error ?? "Could not save your profile" });
           return;
         }
-        router.push("/dashboard");
+        // Straight into roadmap generation — the payoff moment.
+        router.push(`/skills/${data.enrollmentId}`);
         router.refresh();
       } catch {
         setPhase({ name: "error", message: "Network error while saving — retry." });

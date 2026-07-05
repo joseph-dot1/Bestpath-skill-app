@@ -25,16 +25,16 @@ export default async function DashboardPage() {
         {enrollments.map((e) => {
           const skill = Array.isArray(e.skills) ? e.skills[0] : e.skills;
           return (
-            <li
-              key={e.id}
-              className="rounded-2xl border border-border bg-surface p-5"
-            >
-              <span className="font-display font-semibold">
-                {skill?.title ?? "Untitled skill"}
-              </span>
-              <p className="mt-1 text-sm text-muted">
-                Roadmap coming in Milestone 2.
-              </p>
+            <li key={e.id}>
+              <Link
+                href={`/skills/${e.id}`}
+                className="flex items-center justify-between rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-accent"
+              >
+                <span className="font-display font-semibold">
+                  {skill?.title ?? "Untitled skill"}
+                </span>
+                <span className="text-sm text-muted">View roadmap →</span>
+              </Link>
             </li>
           );
         })}
