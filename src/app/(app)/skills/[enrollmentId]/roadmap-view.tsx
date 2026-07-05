@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export type LevelData = {
   id: string;
   index: number;
@@ -95,9 +97,10 @@ export function RoadmapView({
 
             <div className="mt-3 space-y-3">
               {level.modules.map((mod) => (
-                <div
+                <Link
                   key={mod.id}
-                  className="rounded-2xl border border-border bg-surface p-4"
+                  href={`/modules/${mod.id}`}
+                  className="block rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-accent"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-semibold">{mod.title}</h3>
@@ -108,8 +111,8 @@ export function RoadmapView({
                   <p className="mt-1.5 text-xs text-muted">
                     {mod.lessons.length} lessons ·{" "}
                     {mod.hydration_status === "hydrated"
-                      ? "resources ready"
-                      : "resources coming when you get here"}
+                      ? "resources ready →"
+                      : "open to load verified resources →"}
                   </p>
                   <ul className="mt-3 space-y-1">
                     {mod.lessons.map((lesson) => (
@@ -121,7 +124,7 @@ export function RoadmapView({
                       </li>
                     ))}
                   </ul>
-                </div>
+                </Link>
               ))}
             </div>
           </li>
