@@ -47,9 +47,20 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (user && pathname === "/login") {
+    // Already signed in: honor the intended destination (a skill chosen on
+    // the landing page goes straight to the assessment).
+    const skill = request.nextUrl.searchParams.get("skill");
+    const next = request.nextUrl.searchParams.get("next");
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
     url.search = "";
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      url.pathname = next;
+    } else if (skill) {
+      url.pathname = "/assessment";
+      url.searchParams.set("skill", skill);
+    } else {
+      url.pathname = "/dashboard";
+    }
     return NextResponse.redirect(url);
   }
 

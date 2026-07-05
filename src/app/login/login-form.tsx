@@ -9,7 +9,16 @@ type Stage = "email" | "code";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/dashboard";
+  // A skill carried from the landing page routes straight into the assessment.
+  const skill = searchParams.get("skill");
+  const nextParam = searchParams.get("next");
+  // Only allow same-site relative paths (prevents open redirects).
+  const next =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+      ? nextParam
+      : skill
+        ? `/assessment?skill=${encodeURIComponent(skill)}`
+        : "/dashboard";
 
   const [stage, setStage] = useState<Stage>("email");
   const [email, setEmail] = useState("");

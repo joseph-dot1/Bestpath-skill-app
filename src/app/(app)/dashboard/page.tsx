@@ -54,7 +54,7 @@ function EmptyState() {
       </h1>
       <p className="mt-2 max-w-sm text-sm text-muted">
         Choose a skill and answer a few questions — your personalized roadmap
-        arrives in under a minute. (Assessment ships in Milestone 1.)
+        arrives in under a minute.
       </p>
       <div className="mt-8 flex max-w-xl flex-wrap justify-center gap-2">
         {SEED_SKILLS.map((skill) => (
