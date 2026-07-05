@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ModuleHydrator } from "./module-hydrator";
-import { LessonList, type LessonWithResources } from "./lesson-list";
+import { LessonList, QuizCta, type LessonWithResources } from "./lesson-list";
 
 export const metadata = { title: "Module" };
 
@@ -129,6 +129,8 @@ export default async function ModulePage({
             : null
         }
       />
+
+      <QuizCta moduleId={moduleId} />
     </div>
   );
 }

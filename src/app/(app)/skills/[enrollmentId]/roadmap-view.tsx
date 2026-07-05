@@ -126,6 +126,20 @@ export function RoadmapView({
                   </ul>
                 </Link>
               ))}
+
+              {/* Level checkpoint: the "prove it" project */}
+              <Link
+                href={`/levels/${level.id}/checkpoint`}
+                className="block rounded-2xl border border-dashed border-border bg-surface/50 p-4 transition-colors hover:border-accent"
+              >
+                <p className="text-sm font-semibold">
+                  🏁 Prove it — {level.name} checkpoint
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  A real mini-project with feedback. Finish it to close out the
+                  level. →
+                </p>
+              </Link>
             </div>
           </li>
         ))}

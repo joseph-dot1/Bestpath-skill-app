@@ -59,6 +59,22 @@ export function LessonList({
   );
 }
 
+export function QuizCta({ moduleId }: { moduleId: string }) {
+  return (
+    <a
+      href={`/modules/${moduleId}/quiz`}
+      className="mt-6 block rounded-2xl border border-accent/40 bg-surface p-4 text-center transition-colors hover:border-accent"
+    >
+      <p className="font-display text-sm font-semibold">
+        Finished the lessons? <span className="text-accent">Take the quiz →</span>
+      </p>
+      <p className="mt-1 text-xs text-muted">
+        3-5 quick questions — active recall locks it in.
+      </p>
+    </a>
+  );
+}
+
 function LessonCard({
   lesson,
   number,
@@ -66,14 +82,47 @@ function LessonCard({
   lesson: LessonWithResources;
   number: number;
 }) {
+  const [completed, setCompleted] = useState(lesson.completed);
+
+  async function toggleComplete() {
+    const next = !completed;
+    setCompleted(next); // optimistic
+    try {
+      const res = await fetch(`/api/lessons/${lesson.id}/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: next }),
+      });
+      if (!res.ok) setCompleted(!next);
+    } catch {
+      setCompleted(!next);
+    }
+  }
+
   return (
-    <li className="rounded-2xl border border-border bg-surface p-4">
+    <li
+      className={`rounded-2xl border bg-surface p-4 transition-colors ${
+        completed ? "border-accent/40" : "border-border"
+      }`}
+    >
       <div className="flex items-start gap-3">
-        <span className="font-display mt-0.5 text-sm font-bold text-accent">
-          {number}
-        </span>
+        <button
+          onClick={toggleComplete}
+          aria-label={completed ? "Mark lesson incomplete" : "Mark lesson complete"}
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold transition-colors ${
+            completed
+              ? "border-accent bg-accent text-accent-ink"
+              : "border-border text-transparent hover:border-accent"
+          }`}
+        >
+          ✓
+        </button>
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold">{lesson.title}</h2>
+          <h2
+            className={`text-sm font-semibold ${completed ? "text-muted line-through" : ""}`}
+          >
+            <span className="text-accent">{number}.</span> {lesson.title}
+          </h2>
           {lesson.summary && (
             <p className="mt-1 text-xs leading-relaxed text-muted">
               {lesson.summary}
