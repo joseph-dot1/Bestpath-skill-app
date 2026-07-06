@@ -50,7 +50,12 @@ export function LoginForm() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        // The email contains both a 6-digit code and a sign-in link; the
+        // link completes auth through our callback route.
+        emailRedirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
     });
     setBusy(false);
     if (error) {
