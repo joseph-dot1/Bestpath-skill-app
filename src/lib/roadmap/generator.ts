@@ -1,7 +1,7 @@
 import "server-only";
 
-import { getAnthropic, MODELS } from "@/lib/anthropic";
 import type { LearnerProfile } from "@/lib/assessment/engine";
+import { streamStructured } from "@/lib/llm";
 
 // ---------------------------------------------------------------------------
 // Skeleton shape produced by the model. Lesson detail (summaries, topics,
@@ -151,35 +151,32 @@ export async function* streamRoadmapSkeleton(
     `Curriculum designer's notes: ${profile.summary}`,
   ].join("\n");
 
-  const stream = getAnthropic().messages.stream({
-    model: MODELS.reasoning,
-    max_tokens: 16000,
+  const stream = streamStructured({
+    tier: "reasoning",
     system: SYSTEM_PROMPT,
-    output_config: {
-      format: { type: "json_schema", schema: OUTPUT_SCHEMA },
-    },
-    messages: [{ role: "user", content: userMessage }],
+    user: userMessage,
+    schema: OUTPUT_SCHEMA as unknown as Record<string, unknown>,
+    maxTokens: 16000,
   });
 
   const extractor = new LevelExtractor();
   let index = 0;
+  let text = "";
 
-  for await (const event of stream) {
-    if (
-      event.type === "content_block_delta" &&
-      event.delta.type === "text_delta"
-    ) {
-      for (const level of extractor.push(event.delta.text)) {
-        yield { type: "level", level, index: index++ };
-      }
+  // Consume deltas manually so we can also capture the generator's return
+  // value (the full text) without re-accumulating it here.
+  while (true) {
+    const { done, value } = await stream.next();
+    if (done) {
+      text = value;
+      break;
+    }
+    for (const level of extractor.push(value)) {
+      yield { type: "level", level, index: index++ };
     }
   }
 
-  const final = await stream.finalMessage();
-  const text = final.content.find((b) => b.type === "text")?.text;
-  if (!text) {
-    throw new Error(`Roadmap generation returned no text (stop_reason: ${final.stop_reason})`);
-  }
+  if (!text) throw new Error("Roadmap generation returned no text.");
   const parsed = JSON.parse(text) as { levels: SkeletonLevel[] };
   if (!parsed.levels?.length) {
     throw new Error("Roadmap generation returned no levels.");

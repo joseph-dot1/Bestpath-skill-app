@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAnthropicConfigured } from "@/lib/anthropic";
+import { isLlmConfigured, LLM_NOT_CONFIGURED_MESSAGE } from "@/lib/llm";
 import { canAccessLevel, getUserTier } from "@/lib/entitlements";
 import { generateCheckpoint } from "@/lib/learning/checkpoint";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -55,8 +55,8 @@ export async function POST(
     return NextResponse.json(existing);
   }
 
-  if (!isAnthropicConfigured()) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY is not set" }, { status: 503 });
+  if (!isLlmConfigured()) {
+    return NextResponse.json({ error: LLM_NOT_CONFIGURED_MESSAGE }, { status: 503 });
   }
   const admin = createAdminClient();
   if (!admin) {

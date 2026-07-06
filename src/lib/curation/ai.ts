@@ -1,26 +1,24 @@
 import "server-only";
 
-import { getAnthropic, MODELS } from "@/lib/anthropic";
+import { generateStructured } from "@/lib/llm";
 
-// All curation AI calls run on Haiku — short, high-volume, cheap.
+// All curation AI calls run on the fast tier — short, high-volume, cheap.
 // CRITICAL INVARIANT: the model NEVER produces YouTube URLs or video IDs.
 // It produces search queries and re-ranks real candidates returned by the
 // YouTube API — hallucinated links are impossible by construction.
 
-async function haikuJson<T>(
+async function fastJson<T>(
   system: string,
   user: string,
   schema: Record<string, unknown>,
 ): Promise<T> {
-  const response = await getAnthropic().messages.create({
-    model: MODELS.fast,
-    max_tokens: 2048,
+  const text = await generateStructured({
+    tier: "fast",
     system,
-    output_config: { format: { type: "json_schema", schema } },
-    messages: [{ role: "user", content: user }],
+    user,
+    schema,
+    maxTokens: 2048,
   });
-  const text = response.content.find((b) => b.type === "text")?.text;
-  if (!text) throw new Error(`Curation call returned no text (${response.stop_reason})`);
   return JSON.parse(text) as T;
 }
 
@@ -65,7 +63,7 @@ export async function mapLessonsToTopics(input: {
     additionalProperties: false,
   };
 
-  const { assignments } = await haikuJson<{ assignments: TopicAssignment[] }>(
+  const { assignments } = await fastJson<{ assignments: TopicAssignment[] }>(
     `You maintain the topic taxonomy for a skill-learning platform. Topics are canonical units of curriculum shared across all learners — learning resources attach to topics.
 
 For each lesson, assign a topic:
@@ -112,7 +110,7 @@ export async function generateSearchQueries(input: {
     additionalProperties: false,
   };
 
-  const { queries } = await haikuJson<{
+  const { queries } = await fastJson<{
     queries: { lesson_index: number; search_queries: string[] }[];
   }>(
     `You write YouTube search queries for skill-learning lessons. For each lesson produce exactly 2 queries:
@@ -166,7 +164,7 @@ export async function rerankCandidates(input: {
     additionalProperties: false,
   };
 
-  const { scores } = await haikuJson<{
+  const { scores } = await fastJson<{
     scores: { video_id: string; relevance: number }[];
   }>(
     `You judge how well a YouTube video teaches a specific lesson, from its real title/description metadata. Score each candidate 0-10:
@@ -234,7 +232,7 @@ export async function suggestArticles(input: {
     additionalProperties: false,
   };
 
-  const { suggestions } = await haikuJson<{ suggestions: ArticleSuggestion[] }>(
+  const { suggestions } = await fastJson<{ suggestions: ArticleSuggestion[] }>(
     `Suggest free written resources (official docs, major learning sites) for skill lessons. Up to 2 per lesson, 0 is fine.
 
 STRICT RULES — every URL will be live-verified and dead links hurt users:

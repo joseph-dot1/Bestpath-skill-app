@@ -4,7 +4,7 @@ import {
   runAssessmentStep,
   type AssessmentTurn,
 } from "@/lib/assessment/engine";
-import { isAnthropicConfigured } from "@/lib/anthropic";
+import { isLlmConfigured, LLM_NOT_CONFIGURED_MESSAGE } from "@/lib/llm";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -24,9 +24,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
 
-  if (!isAnthropicConfigured()) {
+  if (!isLlmConfigured()) {
     return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY is not set — add it to .env.local (see README)." },
+      { error: LLM_NOT_CONFIGURED_MESSAGE },
       { status: 503 },
     );
   }

@@ -7,10 +7,14 @@ working professionals you won't find on YouTube.
 ## Stack
 
 - **Next.js** (App Router) · TypeScript · Tailwind CSS — dark-mode-first, mobile-first
-- **Supabase** — auth, Postgres with row-level security, storage
-- **Anthropic API** — assessment, roadmap generation, quizzes, checkpoint feedback
-- **YouTube Data API v3** — resource verification & ranking
-- **Resend** — email nudges
+- **Supabase** (free tier) — auth, Postgres with row-level security, storage
+- **AI provider layer** — Google Gemini free tier by default (no card needed);
+  switch to the Anthropic API with one env var when there's budget
+- **YouTube Data API v3** (free tier) — resource verification & ranking
+- **Resend** (free tier) — email nudges
+
+**The whole stack runs on free tiers** — Supabase, Vercel Hobby, Gemini,
+YouTube API, and Resend all have free plans that comfortably cover a pilot.
 
 ## Local setup
 
@@ -40,8 +44,9 @@ working professionals you won't find on YouTube.
    cp .env.example .env.local
    ```
 
-   Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   (Project Settings → API). The remaining keys are needed in later milestones.
+   Fill in the Supabase keys (Project Settings → API), a `GEMINI_API_KEY`
+   (free at [aistudio.google.com](https://aistudio.google.com)), and a
+   `YOUTUBE_API_KEY`. Email keys are optional.
 
 5. **Run the app**
 

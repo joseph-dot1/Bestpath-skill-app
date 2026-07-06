@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAnthropicConfigured } from "@/lib/anthropic";
+import { isLlmConfigured, LLM_NOT_CONFIGURED_MESSAGE } from "@/lib/llm";
 import { hydrateModule } from "@/lib/curation/pipeline";
 import { canAccessLevel, getUserTier } from "@/lib/entitlements";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -57,9 +57,9 @@ export async function POST(
     return NextResponse.json({ status: "hydrating" }, { status: 202 });
   }
 
-  if (!isAnthropicConfigured() || !isYouTubeConfigured()) {
+  if (!isLlmConfigured() || !isYouTubeConfigured()) {
     return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY and YOUTUBE_API_KEY are required for resource curation." },
+      { error: `Resource curation needs an AI key and a YouTube key. ${LLM_NOT_CONFIGURED_MESSAGE}` },
       { status: 503 },
     );
   }

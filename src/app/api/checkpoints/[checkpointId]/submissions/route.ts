@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAnthropicConfigured } from "@/lib/anthropic";
+import { isLlmConfigured, LLM_NOT_CONFIGURED_MESSAGE } from "@/lib/llm";
 import { reviewSubmission } from "@/lib/learning/checkpoint";
 import { createClient } from "@/lib/supabase/server";
 
@@ -60,8 +60,8 @@ export async function POST(
     return NextResponse.json({ error: "Checkpoint not found" }, { status: 404 });
   }
 
-  if (!isAnthropicConfigured()) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY is not set" }, { status: 503 });
+  if (!isLlmConfigured()) {
+    return NextResponse.json({ error: LLM_NOT_CONFIGURED_MESSAGE }, { status: 503 });
   }
 
   /* eslint-disable @typescript-eslint/no-explicit-any */

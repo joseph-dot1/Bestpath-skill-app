@@ -1,5 +1,9 @@
 import type { LearnerProfile } from "@/lib/assessment/engine";
-import { isAnthropicConfigured } from "@/lib/anthropic";
+import {
+  isLlmConfigured,
+  llmDescription,
+  LLM_NOT_CONFIGURED_MESSAGE,
+} from "@/lib/llm";
 import { streamRoadmapSkeleton, type SkeletonLevel } from "@/lib/roadmap/generator";
 import { buildWeeklyPlan, type PlannedLesson } from "@/lib/roadmap/weekly-plan";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -67,8 +71,8 @@ export async function POST(request: Request) {
     });
   }
 
-  if (!isAnthropicConfigured()) {
-    return jsonError("ANTHROPIC_API_KEY is not set — see README.", 503);
+  if (!isLlmConfigured()) {
+    return jsonError(LLM_NOT_CONFIGURED_MESSAGE, 503);
   }
 
   const skillRel = enrollment.skills;
@@ -140,7 +144,7 @@ async function persistRoadmap(
 ): Promise<string> {
   const { data: roadmap, error: roadmapError } = await admin
     .from("roadmaps")
-    .insert({ enrollment_id: enrollmentId, model_used: "claude-sonnet-5" })
+    .insert({ enrollment_id: enrollmentId, model_used: llmDescription() })
     .select("id")
     .single();
   if (roadmapError || !roadmap) throw roadmapError ?? new Error("roadmap insert failed");

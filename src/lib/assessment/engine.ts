@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getAnthropic, MODELS } from "@/lib/anthropic";
+import { generateStructured } from "@/lib/llm";
 
 // ---------------------------------------------------------------------------
 // Types shared with the assessment UI (via the API route)
@@ -138,21 +138,13 @@ export async function runAssessmentStep(
     JSON.stringify(transcript, null, 2),
   ].join("\n");
 
-  const response = await getAnthropic().messages.create({
-    model: MODELS.reasoning,
-    max_tokens: 1024,
-    thinking: { type: "disabled" }, // short interactive call — keep latency low
+  const text = await generateStructured({
+    tier: "reasoning",
     system: SYSTEM_PROMPT,
-    output_config: {
-      format: { type: "json_schema", schema: OUTPUT_SCHEMA },
-    },
-    messages: [{ role: "user", content: userMessage }],
+    user: userMessage,
+    schema: OUTPUT_SCHEMA as unknown as Record<string, unknown>,
+    maxTokens: 1024,
   });
-
-  const text = response.content.find((b) => b.type === "text")?.text;
-  if (!text) {
-    throw new Error(`Assessment model returned no text (stop_reason: ${response.stop_reason})`);
-  }
 
   const step = JSON.parse(text) as AssessmentStep;
 

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getAnthropic, MODELS } from "@/lib/anthropic";
+import { generateStructured } from "@/lib/llm";
 import type { QuizQuestion } from "./types";
 
 const SCHEMA = {
@@ -31,9 +31,9 @@ export async function generateQuiz(input: {
   objectives: string[];
   lessons: { title: string; summary: string | null }[];
 }): Promise<QuizQuestion[]> {
-  const response = await getAnthropic().messages.create({
-    model: MODELS.fast,
-    max_tokens: 2048,
+  const text = await generateStructured({
+    tier: "fast",
+    maxTokens: 2048,
     system: `You write end-of-module quizzes for a skill-learning app. Produce 3-5 multiple-choice questions.
 
 Rules:
@@ -43,22 +43,15 @@ Rules:
 - Vary correct_index across questions (0-3).
 - "explanation": one or two sentences on why the right answer is right — shown after the learner answers.
 Output JSON only.`,
-    output_config: { format: { type: "json_schema", schema: SCHEMA } },
-    messages: [
-      {
-        role: "user",
-        content: JSON.stringify({
-          skill: input.skillTitle,
-          module: input.moduleTitle,
-          objectives: input.objectives,
-          lessons: input.lessons,
-        }),
-      },
-    ],
+    schema: SCHEMA as unknown as Record<string, unknown>,
+    user: JSON.stringify({
+      skill: input.skillTitle,
+      module: input.moduleTitle,
+      objectives: input.objectives,
+      lessons: input.lessons,
+    }),
   });
 
-  const text = response.content.find((b) => b.type === "text")?.text;
-  if (!text) throw new Error(`Quiz generation returned no text (${response.stop_reason})`);
   const { questions } = JSON.parse(text) as { questions: QuizQuestion[] };
 
   // Guard the shape the UI depends on.
