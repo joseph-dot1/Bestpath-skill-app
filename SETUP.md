@@ -24,8 +24,21 @@ npm install
    1. `supabase/migrations/0001_init.sql`
    2. `supabase/migrations/0002_api_usage_fn.sql`
    3. `supabase/migrations/0003_plan_anchor.sql`
-3. Email sign-in codes are on by default (Authentication → Providers → Email).
-   Google OAuth is optional and can be added later.
+3. Email sign-in is on by default, but Supabase's default email only contains
+   a link — add the 6-digit code to it: **Authentication → Emails** (or
+   "Email Templates") → **Magic Link** template → replace the body with:
+
+   ```html
+   <h2>Your Bestpath sign-in code</h2>
+   <p>Enter this code in the app:</p>
+   <p style="font-size:28px;font-weight:bold;letter-spacing:6px">{{ .Token }}</p>
+   <p>Or <a href="{{ .ConfirmationURL }}">click here to sign in directly</a>.</p>
+   ```
+
+   Both the code and the link will then work. Google OAuth is optional and
+   can be added later. Note: Supabase's built-in sender is limited to a few
+   emails per hour — fine for solo testing; connect Resend as custom SMTP
+   before real users.
 4. From **Project Settings → API**, copy three values: the **Project URL**,
    the **anon** key, and the **service_role** key (keep that one secret).
 
