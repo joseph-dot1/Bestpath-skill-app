@@ -16,6 +16,8 @@ working professionals you won't find on YouTube.
 **The whole stack runs on free tiers** — Supabase, Vercel Hobby, Gemini,
 YouTube API, and Resend all have free plans that comfortably cover a pilot.
 
+> **Full step-by-step walkthrough (free stack, key setup, deploy): see [SETUP.md](./SETUP.md).**
+
 ## Local setup
 
 1. **Install dependencies**
