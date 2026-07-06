@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { AssessmentTurn, LearnerProfile } from "@/lib/assessment/engine";
+import { sendWelcomeEmail } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -117,6 +118,11 @@ export async function POST(request: Request) {
     name: "assessment_completed",
     props: { skill_id: skillId, questions: transcript.length },
   });
+
+  // Best-effort welcome email; never blocks the response.
+  if (user.email) {
+    void sendWelcomeEmail(user.email, skillInput, enrollment.id);
+  }
 
   return NextResponse.json({ enrollmentId: enrollment.id });
 }

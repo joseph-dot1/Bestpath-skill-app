@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { BehindBanner } from "@/components/replan-button";
+import { computePlanStanding } from "@/lib/plan-status";
 import { createClient } from "@/lib/supabase/server";
 import { RoadmapGenerator } from "./roadmap-generator";
 import { RoadmapView, type LevelData } from "./roadmap-view";
@@ -16,7 +18,7 @@ export default async function SkillRoadmapPage({
 
   const { data: enrollment } = await supabase
     .from("enrollments")
-    .select("id, weekly_hours, skills ( title )")
+    .select("id, weekly_hours, plan_started_at, skills ( title )")
     .eq("id", enrollmentId)
     .maybeSingle();
   if (!enrollment) notFound();
@@ -65,25 +67,39 @@ export default async function SkillRoadmapPage({
     l.modules.flatMap((m) => m.lessons.map((ls) => ls.id)),
   );
 
-  const [{ count: completedCount }, { count: weekCount }] = await Promise.all([
+  const [{ data: completions }, { data: weeks }] = await Promise.all([
     supabase
       .from("lesson_completions")
-      .select("lesson_id", { count: "exact", head: true })
+      .select("lesson_id")
       .in("lesson_id", lessonIds.length > 0 ? lessonIds : ["-"]),
     supabase
       .from("weekly_plans")
-      .select("id", { count: "exact", head: true })
+      .select("week_index, planned_lesson_ids")
       .eq("enrollment_id", enrollmentId),
   ]);
 
+  const standing = computePlanStanding({
+    planStartedAt: enrollment.plan_started_at,
+    weeks: weeks ?? [],
+    completedLessonIds: new Set((completions ?? []).map((c) => c.lesson_id)),
+    allLessonIds: lessonIds,
+  });
+
   return (
-    <RoadmapView
-      skillTitle={skillTitle}
-      levels={sorted}
-      completedLessons={completedCount ?? 0}
-      totalLessons={lessonIds.length}
-      totalWeeks={weekCount ?? 0}
-      weeklyHours={enrollment.weekly_hours}
-    />
+    <>
+      {standing.status === "behind" && (
+        <div className="mx-auto w-full max-w-2xl">
+          <BehindBanner enrollmentId={enrollmentId} />
+        </div>
+      )}
+      <RoadmapView
+        skillTitle={skillTitle}
+        levels={sorted}
+        completedLessons={standing.completedLessons}
+        totalLessons={standing.totalLessons}
+        totalWeeks={standing.totalWeeks}
+        weeklyHours={enrollment.weekly_hours}
+      />
+    </>
   );
 }

@@ -70,6 +70,6 @@ working professionals you won't find on YouTube.
 | M2 | Roadmap skeleton generation + overview UI + weekly plan | ✅ |
 | M3 | Resource pipeline (YouTube verify + rank) + module UI | ✅ |
 | M4 | Learning loop — quizzes, checkpoints, progress | ✅ |
-| M5 | Retention — dashboard, replan, email nudges, events | ⬜ |
+| M5 | Retention — dashboard, replan, email nudges, events | ✅ |
 | M6 | Pro Insights + free/paid gating | ⬜ |
 | M7 | Pilot polish — low-bandwidth pass, PWA, QA across seed skills | ⬜ |
