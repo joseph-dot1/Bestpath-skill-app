@@ -19,6 +19,14 @@ export const metadata: Metadata = {
   },
   description:
     "Type any skill and get a personalized beginner-to-pro roadmap with verified resources, checkpoints, and insights from working professionals.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Bestpath", statusBarStyle: "black" },
+};
+
+export const viewport = {
+  themeColor: "#0b0e0c",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

@@ -1,0 +1,17 @@
+{
+  "name": "Bestpath",
+  "short_name": "Bestpath",
+  "description": "The best path to any skill — personalized roadmaps with verified resources.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0b0e0c",
+  "theme_color": "#0b0e0c",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

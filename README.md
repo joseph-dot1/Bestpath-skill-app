@@ -72,4 +72,4 @@ working professionals you won't find on YouTube.
 | M4 | Learning loop — quizzes, checkpoints, progress | ✅ |
 | M5 | Retention — dashboard, replan, email nudges, events | ✅ |
 | M6 | Pro Insights + free/paid gating | ✅ |
-| M7 | Pilot polish — low-bandwidth pass, PWA, QA across seed skills | ⬜ |
+| M7 | Pilot polish — nightly link re-verification, PWA, error states | ✅ |
