@@ -116,14 +116,18 @@ export function LoginForm() {
             disabled={busy}
             className="h-11 w-full rounded-xl bg-accent text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-strong disabled:opacity-50"
           >
-            {busy ? "Sending…" : "Send sign-in code"}
+            {busy ? "Sending…" : "Email me a sign-in link"}
           </button>
         </form>
       ) : (
         <form onSubmit={verifyCode} className="space-y-3">
           <p className="text-sm text-muted">
-            We sent a 6-digit code to{" "}
-            <span className="text-foreground">{email}</span>.
+            We emailed{" "}
+            <span className="text-foreground">{email}</span>. Open it{" "}
+            <span className="text-foreground">
+              in this browser and click the sign-in link
+            </span>
+            — or if the email shows a 6-digit code, enter it below.
           </p>
           <input
             type="text"
