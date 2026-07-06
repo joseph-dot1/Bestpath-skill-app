@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAnthropicConfigured } from "@/lib/anthropic";
+import { canAccessLevel, getUserTier } from "@/lib/entitlements";
 import { generateCheckpoint } from "@/lib/learning/checkpoint";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -30,7 +31,7 @@ export async function POST(
   const { data: level } = await supabase
     .from("levels")
     .select(
-      `id, name,
+      `id, name, is_free,
        modules ( title ),
        roadmaps ( enrollments ( goal, skills ( title ) ) )`,
     )
@@ -38,6 +39,11 @@ export async function POST(
     .maybeSingle();
   if (!level) {
     return NextResponse.json({ error: "Level not found" }, { status: 404 });
+  }
+
+  const tier = await getUserTier(supabase, user.id);
+  if (!canAccessLevel(tier, level.is_free)) {
+    return NextResponse.json({ error: "Upgrade to Pro to unlock this level." }, { status: 403 });
   }
 
   const { data: existing } = await supabase

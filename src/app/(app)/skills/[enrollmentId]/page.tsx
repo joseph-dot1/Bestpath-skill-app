@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import { ProInsights, type Insight } from "@/components/pro-insights";
 import { BehindBanner } from "@/components/replan-button";
+import { getUserTier } from "@/lib/entitlements";
 import { computePlanStanding } from "@/lib/plan-status";
 import { createClient } from "@/lib/supabase/server";
 import { RoadmapGenerator } from "./roadmap-generator";
@@ -18,7 +20,7 @@ export default async function SkillRoadmapPage({
 
   const { data: enrollment } = await supabase
     .from("enrollments")
-    .select("id, weekly_hours, plan_started_at, skills ( title )")
+    .select("id, skill_id, weekly_hours, plan_started_at, skills ( title )")
     .eq("id", enrollmentId)
     .maybeSingle();
   if (!enrollment) notFound();
@@ -85,6 +87,27 @@ export default async function SkillRoadmapPage({
     allLessonIds: lessonIds,
   });
 
+  // Entitlements + this skill's Pro Insights.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const tier = user ? await getUserTier(supabase, user.id) : "free";
+  const isPro = tier === "pro";
+
+  const { data: insightRows } = await supabase
+    .from("pro_insights")
+    .select("id, author_name, author_title, format, body, is_premium")
+    .eq("skill_id", enrollment.skill_id)
+    .not("published_at", "is", null)
+    .order("is_premium", { ascending: false })
+    .limit(10);
+
+  // Premium bodies must never reach a free-tier client.
+  const insights: Insight[] = (insightRows ?? []).map((i) => ({
+    ...i,
+    body: i.is_premium && !isPro ? "" : i.body,
+  })) as Insight[];
+
   return (
     <>
       {standing.status === "behind" && (
@@ -99,7 +122,9 @@ export default async function SkillRoadmapPage({
         totalLessons={standing.totalLessons}
         totalWeeks={standing.totalWeeks}
         weeklyHours={enrollment.weekly_hours}
+        isPro={isPro}
       />
+      <ProInsights insights={insights} isPro={isPro} />
     </>
   );
 }

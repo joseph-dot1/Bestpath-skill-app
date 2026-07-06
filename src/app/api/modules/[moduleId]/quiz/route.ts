@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAnthropicConfigured } from "@/lib/anthropic";
+import { canAccessLevel, getUserTier } from "@/lib/entitlements";
 import { generateQuiz } from "@/lib/learning/quiz";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -33,12 +34,20 @@ export async function POST(
     .select(
       `id, title, objectives,
        lessons ( title, summary ),
-       levels ( roadmaps ( enrollments ( skills ( title ) ) ) )`,
+       levels ( is_free, roadmaps ( enrollments ( skills ( title ) ) ) )`,
     )
     .eq("id", moduleId)
     .maybeSingle();
   if (!mod) {
     return NextResponse.json({ error: "Module not found" }, { status: 404 });
+  }
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const levelIsFree: boolean = (mod as any).levels?.is_free ?? false;
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+  const tier = await getUserTier(supabase, user.id);
+  if (!canAccessLevel(tier, levelIsFree)) {
+    return NextResponse.json({ error: "Upgrade to Pro to unlock this level." }, { status: 403 });
   }
 
   // Cached quiz? Return it.

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAnthropicConfigured } from "@/lib/anthropic";
 import { hydrateModule } from "@/lib/curation/pipeline";
+import { canAccessLevel, getUserTier } from "@/lib/entitlements";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isYouTubeConfigured } from "@/lib/youtube";
@@ -33,11 +34,21 @@ export async function POST(
   // Ownership check through RLS — a module the user can't read 404s here.
   const { data: mod } = await supabase
     .from("modules")
-    .select("id, hydration_status")
+    .select("id, hydration_status, levels ( is_free )")
     .eq("id", moduleId)
     .maybeSingle();
   if (!mod) {
     return NextResponse.json({ error: "Module not found" }, { status: 404 });
+  }
+
+  // Tier gate: hydration is the expensive step — never spend quota on
+  // levels the learner can't open.
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const isFree: boolean = (mod as any).levels?.is_free ?? false;
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+  const tier = await getUserTier(supabase, user.id);
+  if (!canAccessLevel(tier, isFree)) {
+    return NextResponse.json({ error: "Upgrade to Pro to unlock this level." }, { status: 403 });
   }
   if (mod.hydration_status === "hydrated") {
     return NextResponse.json({ status: "hydrated" });

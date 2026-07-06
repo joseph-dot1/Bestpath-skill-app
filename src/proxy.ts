@@ -13,6 +13,7 @@ const PROTECTED_PREFIXES = [
   "/skills",
   "/modules",
   "/levels",
+  "/upgrade",
   "/admin",
 ];
 

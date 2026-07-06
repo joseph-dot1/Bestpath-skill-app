@@ -23,6 +23,7 @@ export function RoadmapView({
   totalLessons,
   totalWeeks,
   weeklyHours,
+  isPro,
 }: {
   skillTitle: string;
   levels: LevelData[];
@@ -30,6 +31,7 @@ export function RoadmapView({
   totalLessons: number;
   totalWeeks: number;
   weeklyHours: number | null;
+  isPro: boolean;
 }) {
   const pct =
     totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
@@ -68,7 +70,9 @@ export function RoadmapView({
 
       {/* Levels as a vertical path */}
       <ol className="relative mt-8 space-y-6 border-l border-border pl-6">
-        {levels.map((level) => (
+        {levels.map((level) => {
+          const locked = !level.is_free && !isPro;
+          return (
           <li key={level.id} className="relative">
             <span
               className={`absolute -left-[31px] top-1 flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold ${
@@ -96,53 +100,84 @@ export function RoadmapView({
             </div>
 
             <div className="mt-3 space-y-3">
-              {level.modules.map((mod) => (
-                <Link
-                  key={mod.id}
-                  href={`/modules/${mod.id}`}
-                  className="block rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-accent"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-semibold">{mod.title}</h3>
-                    <span className="shrink-0 text-xs text-muted">
-                      ~{mod.est_hours ?? "?"}h
-                    </span>
+              {level.modules.map((mod) =>
+                locked ? (
+                  <div
+                    key={mod.id}
+                    className="rounded-2xl border border-border bg-surface p-4 opacity-60"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold">{mod.title}</h3>
+                      <span className="shrink-0 text-xs text-muted">🔒</span>
+                    </div>
+                    <p className="mt-1.5 text-xs blur-[3px] select-none text-muted">
+                      {mod.lessons.map((l) => l.title).join(" · ")}
+                    </p>
                   </div>
-                  <p className="mt-1.5 text-xs text-muted">
-                    {mod.lessons.length} lessons ·{" "}
-                    {mod.hydration_status === "hydrated"
-                      ? "resources ready →"
-                      : "open to load verified resources →"}
-                  </p>
-                  <ul className="mt-3 space-y-1">
-                    {mod.lessons.map((lesson) => (
-                      <li
-                        key={lesson.id}
-                        className="truncate text-xs text-muted"
-                      >
-                        – {lesson.title}
-                      </li>
-                    ))}
-                  </ul>
-                </Link>
-              ))}
+                ) : (
+                  <Link
+                    key={mod.id}
+                    href={`/modules/${mod.id}`}
+                    className="block rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-accent"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold">{mod.title}</h3>
+                      <span className="shrink-0 text-xs text-muted">
+                        ~{mod.est_hours ?? "?"}h
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted">
+                      {mod.lessons.length} lessons ·{" "}
+                      {mod.hydration_status === "hydrated"
+                        ? "resources ready →"
+                        : "open to load verified resources →"}
+                    </p>
+                    <ul className="mt-3 space-y-1">
+                      {mod.lessons.map((lesson) => (
+                        <li
+                          key={lesson.id}
+                          className="truncate text-xs text-muted"
+                        >
+                          – {lesson.title}
+                        </li>
+                      ))}
+                    </ul>
+                  </Link>
+                ),
+              )}
 
-              {/* Level checkpoint: the "prove it" project */}
-              <Link
-                href={`/levels/${level.id}/checkpoint`}
-                className="block rounded-2xl border border-dashed border-border bg-surface/50 p-4 transition-colors hover:border-accent"
-              >
-                <p className="text-sm font-semibold">
-                  🏁 Prove it — {level.name} checkpoint
-                </p>
-                <p className="mt-1 text-xs text-muted">
-                  A real mini-project with feedback. Finish it to close out the
-                  level. →
-                </p>
-              </Link>
+              {locked ? (
+                <Link
+                  href="/upgrade"
+                  className="block rounded-2xl border border-accent/40 bg-surface p-4 text-center transition-colors hover:border-accent"
+                >
+                  <p className="text-sm font-semibold">
+                    🔓 Unlock {level.name} with{" "}
+                    <span className="text-accent">Pro</span>
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    Your Beginner level is free forever. Pro opens the rest of
+                    the path. →
+                  </p>
+                </Link>
+              ) : (
+                <Link
+                  href={`/levels/${level.id}/checkpoint`}
+                  className="block rounded-2xl border border-dashed border-border bg-surface/50 p-4 transition-colors hover:border-accent"
+                >
+                  <p className="text-sm font-semibold">
+                    🏁 Prove it — {level.name} checkpoint
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    A real mini-project with feedback. Finish it to close out
+                    the level. →
+                  </p>
+                </Link>
+              )}
             </div>
           </li>
-        ))}
+          );
+        })}
       </ol>
     </div>
   );

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { canAccessLevel, getUserTier } from "@/lib/entitlements";
 import { createClient } from "@/lib/supabase/server";
 import { ModuleHydrator } from "./module-hydrator";
 import { LessonList, QuizCta, type LessonWithResources } from "./lesson-list";
@@ -19,7 +20,7 @@ export default async function ModulePage({
     .from("modules")
     .select(
       `id, index, title, objectives, est_hours, hydration_status, level_id,
-       levels ( id, name, roadmap_id, roadmaps ( enrollment_id ) )`,
+       levels ( id, name, is_free, roadmap_id, roadmaps ( enrollment_id ) )`,
     )
     .eq("id", moduleId)
     .maybeSingle();
@@ -30,6 +31,15 @@ export default async function ModulePage({
   const enrollmentId: string | undefined = level?.roadmaps?.enrollment_id;
   const levelName: string = level?.name ?? "";
   /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  // Free tier gets the Beginner level; deeper levels are Pro.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const tier = user ? await getUserTier(supabase, user.id) : "free";
+  if (!canAccessLevel(tier, level?.is_free ?? false)) {
+    redirect("/upgrade");
+  }
 
   // Not hydrated yet → curation experience (triggers hydration, then reloads).
   if (mod.hydration_status !== "hydrated") {
