@@ -113,13 +113,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not create enrollment" }, { status: 500 });
   }
 
-  await supabase.from("events").insert({
+  // Analytics + welcome email are best-effort — don't make the learner wait
+  // on them before landing in their roadmap.
+  void supabase.from("events").insert({
     user_id: user.id,
     name: "assessment_completed",
     props: { skill_id: skillId, questions: transcript.length },
   });
-
-  // Best-effort welcome email; never blocks the response.
   if (user.email) {
     void sendWelcomeEmail(user.email, skillInput, enrollment.id);
   }

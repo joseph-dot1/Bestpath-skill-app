@@ -23,8 +23,8 @@ export type SkeletonLevel = {
 const SYSTEM_PROMPT = `You design learning roadmaps for Bestpath. Given a skill and a learner profile, produce a roadmap as JSON with exactly four levels in order: Beginner, Intermediate, Advanced, Professional.
 
 Structure rules:
-- 2-4 modules per level; 3-6 lessons per module.
-- Module objectives: 2-4 concrete "can do" statements (not "understand X" — "edit a 60-second video with cuts and transitions").
+- Keep it TIGHT: exactly 2-3 modules per level, and 3-4 lessons per module. A focused path a beginner can actually finish beats an exhaustive one. Do not exceed these counts.
+- Module objectives: 2-3 concrete "can do" statements (not "understand X" — "edit a 60-second video with cuts and transitions").
 - est_hours per module: realistic total hours including practice, typically 2-12.
 - Lesson titles must be concrete and specific — they seed YouTube searches later. "Color grading with Lumetri Color in Premiere Pro" beats "Color basics".
 - Sequence for momentum: the learner should make something real inside the first module.
@@ -165,7 +165,9 @@ export async function* streamRoadmapSkeleton(
     system: SYSTEM_PROMPT,
     user: userMessage,
     schema: OUTPUT_SCHEMA as unknown as Record<string, unknown>,
-    maxTokens: 16000,
+    // Tighter roadmap (2-3 modules/level) fits comfortably and generates
+    // roughly twice as fast as the old 16k budget on the free tier.
+    maxTokens: 10000,
   });
 
   const extractor = new LevelExtractor();
