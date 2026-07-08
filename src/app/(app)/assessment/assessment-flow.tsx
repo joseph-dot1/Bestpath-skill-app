@@ -8,7 +8,7 @@ import type {
   LearnerProfile,
 } from "@/lib/assessment/engine";
 
-const MAX_QUESTIONS = 8;
+const MAX_QUESTIONS = 10;
 
 type Phase =
   | { name: "loading" } // waiting on the next question

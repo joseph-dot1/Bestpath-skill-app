@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { MarketSnapshot } from "@/components/market-snapshot";
 import { ProInsights, type Insight } from "@/components/pro-insights";
 import { BehindBanner } from "@/components/replan-button";
 import { getUserTier } from "@/lib/entitlements";
@@ -124,6 +125,7 @@ export default async function SkillRoadmapPage({
         weeklyHours={enrollment.weekly_hours}
         isPro={isPro}
       />
+      <MarketSnapshot skillId={enrollment.skill_id} />
       <ProInsights insights={insights} isPro={isPro} />
     </>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { SEED_SKILLS } from "@/lib/seed-skills";
+import { createClient } from "@/lib/supabase/server";
 
 const STEPS = [
   {
@@ -17,7 +18,37 @@ const STEPS = [
   },
 ];
 
-export default function Home() {
+type EarningRow = {
+  skillTitle: string;
+  slug: string;
+  payBeginner: string;
+};
+
+// Cached market snapshots surface real pay ranges on the landing page. This
+// fills in as skills get explored (generation happens on the skill page).
+async function getEarnings(): Promise<EarningRow[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("skill_market")
+    .select("pay_beginner, skills!inner ( title, slug, status )")
+    .order("generated_at", { ascending: false })
+    .limit(6);
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  return (data ?? [])
+    .map((row: any) => ({
+      skillTitle: row.skills?.title as string,
+      slug: row.skills?.slug as string,
+      payBeginner: row.pay_beginner as string,
+    }))
+    .filter((r) => r.skillTitle && r.slug);
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+}
+
+export default async function Home() {
+  const earnings = await getEarnings();
+
   return (
     <div className="flex flex-1 flex-col">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5">
@@ -99,6 +130,47 @@ export default function Home() {
               </p>
             </div>
           ))}
+        </section>
+
+        {/* What these skills pay — real market context, not just courses */}
+        <section className="pb-24">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-xl font-semibold">
+              What these skills actually pay
+            </h2>
+            <span className="text-xs text-muted">
+              Naira &amp; USD · updated per skill
+            </span>
+          </div>
+
+          {earnings.length > 0 ? (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {earnings.map((e) => (
+                <Link
+                  key={e.slug}
+                  href={`/login?skill=${e.slug}`}
+                  className="rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-accent"
+                >
+                  <p className="font-display text-sm font-semibold">
+                    {e.skillTitle}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-accent">
+                    Beginner pay
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted">
+                    {e.payBeginner}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 max-w-xl text-sm text-muted">
+              Every roadmap comes with a live market snapshot — real beginner and
+              experienced pay ranges (Naira and USD), how much demand there is,
+              and an honest read on how AI is changing the skill. Pick a skill
+              above to see it.
+            </p>
+          )}
         </section>
       </main>
 

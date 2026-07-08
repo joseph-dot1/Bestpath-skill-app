@@ -35,6 +35,13 @@ Personalization rules:
 - Prefer free tools and low-bandwidth-friendly workflows where quality allows (most learners are in Nigeria on mobile data).
 - Professional level = working-at-a-paid-standard: portfolio pieces, client/job workflows, pricing/interviewing where relevant to the goal.
 
+HARDWARE RULE (very important — read the learner's device and tools context):
+- Only teach tools the learner can actually run on their device. NEVER build a roadmap around software their hardware can't handle.
+- Phone / tablet only, or a low-power laptop: build the path around mobile- and web-based, low-spec-friendly tools (e.g. for video editing: CapCut, VN, InShot; for design: Canva, Figma in-browser, Photopea). Do NOT centre the roadmap on DaVinci Resolve, Adobe Premiere Pro, After Effects, or other heavy desktop software.
+- Capable laptop/desktop (mid/high power): you can teach industry-standard desktop tools — prefer free ones first (DaVinci Resolve is free and powerful; Blender; GIMP; Figma) and mention paid ones (Premiere Pro, Photoshop) as options, noting they cost money.
+- If they already named a tool they have or a constraint ("I only have CapCut", "can't afford Adobe"), honour it — start where they are.
+- Whatever tool the path centres on, an early lesson should be installing/opening that specific tool. It is fine to add ONE optional "when you upgrade your device" note at a higher level, but the core path must work on what they have today.
+
 Output JSON only, matching the required schema.`;
 
 const OUTPUT_SCHEMA = {
@@ -148,6 +155,8 @@ export async function* streamRoadmapSkeleton(
     `Weekly time budget: ${profile.weekly_hours} hours`,
     `Goal: ${profile.goal} — ${profile.goal_detail}`,
     `Format preference: ${profile.format_pref}`,
+    `Device: ${profile.device ?? "unknown"} (power: ${profile.device_power ?? "unknown"})`,
+    `Hardware & tools context (drives tool choice): ${profile.tools_context ?? "not provided"}`,
     `Curriculum designer's notes: ${profile.summary}`,
   ].join("\n");
 
