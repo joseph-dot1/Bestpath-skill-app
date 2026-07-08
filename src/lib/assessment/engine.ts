@@ -138,8 +138,10 @@ export async function runAssessmentStep(
     JSON.stringify(transcript, null, 2),
   ].join("\n");
 
+  // Fast tier: snappy interactive turns, and it keeps the reasoning model's
+  // free-tier requests-per-minute headroom for roadmap generation right after.
   const text = await generateStructured({
-    tier: "reasoning",
+    tier: "fast",
     system: SYSTEM_PROMPT,
     user: userMessage,
     schema: OUTPUT_SCHEMA as unknown as Record<string, unknown>,

@@ -76,13 +76,24 @@ export function sanitizeSchemaForGemini(node: unknown): unknown {
   return out;
 }
 
-function buildBody(req: StructuredRequest, schema: unknown | null) {
+function buildBody(
+  req: StructuredRequest,
+  schema: unknown | null,
+  withThinkingConfig = true,
+) {
+  // Gemini 2.5 models "think" before answering by default, which adds a long
+  // silent delay before the first token. Structured generation here doesn't
+  // need it — disable for speed (override via GEMINI_THINKING_BUDGET).
+  const thinkingBudget = Number(process.env.GEMINI_THINKING_BUDGET ?? 0);
+
   return {
     systemInstruction: { parts: [{ text: req.system }] },
     contents: [{ role: "user", parts: [{ text: req.user }] }],
     generationConfig: {
       maxOutputTokens: req.maxTokens,
       responseMimeType: "application/json",
+      // Dropped on the 400 fallback in case a model rejects thinkingConfig.
+      ...(withThinkingConfig ? { thinkingConfig: { thinkingBudget } } : {}),
       ...(schema ? { responseSchema: schema } : {}),
     },
   };
@@ -143,8 +154,8 @@ export async function generateStructured(req: StructuredRequest): Promise<string
 
   let res = await callWithRetry(url, buildBody(req, schema));
   if (res.status === 400) {
-    // Schema translation rejected → fall back to JSON-mode without a schema.
-    res = await callWithRetry(url, buildBody(req, null));
+    // Schema or thinkingConfig rejected → retry as plain JSON mode.
+    res = await callWithRetry(url, buildBody(req, null, false));
   }
   if (!res.ok) {
     throw new Error(`Gemini ${model} failed (${res.status}): ${(await res.text()).slice(0, 300)}`);
@@ -161,7 +172,7 @@ export async function* streamStructured(
 
   let res = await callWithRetry(url, buildBody(req, schema));
   if (res.status === 400) {
-    res = await callWithRetry(url, buildBody(req, null));
+    res = await callWithRetry(url, buildBody(req, null, false));
   }
   if (!res.ok || !res.body) {
     throw new Error(`Gemini ${model} stream failed (${res.status}): ${(await res.text()).slice(0, 300)}`);
