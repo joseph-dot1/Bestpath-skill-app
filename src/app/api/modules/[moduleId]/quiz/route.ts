@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { isLlmConfigured, LLM_NOT_CONFIGURED_MESSAGE } from "@/lib/llm";
+import {
+  isLlmConfigured,
+  llmErrorMessage,
+  LLM_NOT_CONFIGURED_MESSAGE,
+} from "@/lib/llm";
 import { canAccessLevel, getUserTier } from "@/lib/entitlements";
 import { generateQuiz } from "@/lib/learning/quiz";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -94,6 +98,9 @@ export async function POST(
     return NextResponse.json({ quizId: quiz.id, questions: quiz.questions });
   } catch (err) {
     console.error("quiz generation failed:", err);
-    return NextResponse.json({ error: "Quiz generation failed — retry." }, { status: 500 });
+    return NextResponse.json(
+      { error: llmErrorMessage(err, "Quiz generation failed — retry.") },
+      { status: 503 },
+    );
   }
 }

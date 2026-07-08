@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { isLlmConfigured, LLM_NOT_CONFIGURED_MESSAGE } from "@/lib/llm";
+import {
+  isLlmConfigured,
+  llmErrorMessage,
+  LLM_NOT_CONFIGURED_MESSAGE,
+} from "@/lib/llm";
 import { reviewSubmission } from "@/lib/learning/checkpoint";
 import { createClient } from "@/lib/supabase/server";
 
@@ -103,6 +107,9 @@ export async function POST(
     return NextResponse.json({ submissionId: submission.id, feedback });
   } catch (err) {
     console.error("submission review failed:", err);
-    return NextResponse.json({ error: "Review failed — retry." }, { status: 500 });
+    return NextResponse.json(
+      { error: llmErrorMessage(err, "Review failed — retry.") },
+      { status: 503 },
+    );
   }
 }

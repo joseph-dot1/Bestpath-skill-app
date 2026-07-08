@@ -2,6 +2,7 @@ import type { LearnerProfile } from "@/lib/assessment/engine";
 import {
   isLlmConfigured,
   llmDescription,
+  llmErrorMessage,
   LLM_NOT_CONFIGURED_MESSAGE,
 } from "@/lib/llm";
 import { streamRoadmapSkeleton, type SkeletonLevel } from "@/lib/roadmap/generator";
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
         console.error("roadmap generation failed:", err);
         send({
           type: "error",
-          message: "Roadmap generation failed — please retry.",
+          message: llmErrorMessage(err, "Roadmap generation failed — please retry."),
         });
       } finally {
         controller.close();

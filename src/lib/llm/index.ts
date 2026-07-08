@@ -61,6 +61,18 @@ export function llmDescription(): string {
 export const LLM_NOT_CONFIGURED_MESSAGE =
   "No AI provider configured — set GEMINI_API_KEY (free at aistudio.google.com) or ANTHROPIC_API_KEY.";
 
+/**
+ * Turn a caught generation error into a user-facing message. Rate-limit
+ * errors get their own clear "busy, try again" text; everything else uses
+ * the caller's fallback.
+ */
+export function llmErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.name === "RateLimitedError") {
+    return err.message;
+  }
+  return fallback;
+}
+
 /** One-shot structured JSON generation. Returns the raw JSON string. */
 export function generateStructured(req: StructuredRequest): Promise<string> {
   return activeProvider().generateStructured(req);

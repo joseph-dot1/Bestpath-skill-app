@@ -99,10 +99,21 @@ function buildBody(
   };
 }
 
-const RETRY_DELAYS_MS = [5_000, 15_000, 30_000];
+// Short, bounded backoff: absorb a brief free-tier rate spike without letting
+// the whole request hang so long the browser drops the socket (which surfaces
+// as a confusing "Network error"). Worst case ~11s of waiting, then a clean
+// error the route turns into a friendly "busy, try again" message.
+const RETRY_DELAYS_MS = [3_000, 8_000];
+
+/** Thrown when the free tier is rate-limited even after retries. */
+export class RateLimitedError extends Error {
+  constructor() {
+    super("The free AI tier is busy right now. Wait a few seconds and try again.");
+    this.name = "RateLimitedError";
+  }
+}
 
 async function callWithRetry(url: string, body: object): Promise<Response> {
-  let lastError = "";
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
     const res = await fetch(url, {
       method: "POST",
@@ -111,19 +122,19 @@ async function callWithRetry(url: string, body: object): Promise<Response> {
         "x-goog-api-key": apiKey(),
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(60_000),
     });
     // Free-tier rate limits (RPM) surface as 429 — back off and retry.
     if (res.status === 429 || res.status === 503) {
-      lastError = `${res.status}: ${await res.text().catch(() => "")}`;
       if (attempt < RETRY_DELAYS_MS.length) {
         await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
         continue;
       }
+      throw new RateLimitedError(); // exhausted retries
     }
     return res;
   }
-  throw new Error(`Gemini rate-limited after retries (${lastError.slice(0, 200)})`);
+  throw new RateLimitedError();
 }
 
 type GeminiResponse = {

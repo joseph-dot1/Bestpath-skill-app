@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { isLlmConfigured, LLM_NOT_CONFIGURED_MESSAGE } from "@/lib/llm";
+import {
+  isLlmConfigured,
+  llmErrorMessage,
+  LLM_NOT_CONFIGURED_MESSAGE,
+} from "@/lib/llm";
 import { canAccessLevel, getUserTier } from "@/lib/entitlements";
 import { generateCheckpoint } from "@/lib/learning/checkpoint";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -90,6 +94,9 @@ export async function POST(
     return NextResponse.json(checkpoint);
   } catch (err) {
     console.error("checkpoint generation failed:", err);
-    return NextResponse.json({ error: "Checkpoint generation failed — retry." }, { status: 500 });
+    return NextResponse.json(
+      { error: llmErrorMessage(err, "Checkpoint generation failed — retry.") },
+      { status: 503 },
+    );
   }
 }
