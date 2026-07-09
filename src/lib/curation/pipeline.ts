@@ -80,6 +80,9 @@ async function fillTopicVideos(
     } catch (err) {
       console.error(`search failed for "${query}":`, err);
     }
+    // One good search is usually enough — only fall back to the next query if
+    // the first returned nothing. Keeps hydration inside serverless limits.
+    if (candidates.length > 0) break;
   }
   if (candidates.length === 0) return;
 
@@ -219,60 +222,105 @@ export async function hydrateModule(admin: Admin, moduleId: string): Promise<voi
         .eq("id", lesson.id);
     }
 
-    // --- 2. Fill video pools for topics that need it ------------------------
+    // --- 2. Fill video pools for unique topics, IN PARALLEL -----------------
+    // Multiple lessons can share a topic; fill each unique topic once. Running
+    // the fills concurrently keeps the whole module well inside the 60s
+    // serverless limit on Vercel's free plan.
     const queryMap = await generateSearchQueries({
       skillTitle,
       lessons: lessons.map((l) => ({ index: l.index, title: l.title })),
     });
 
+    const topicFills = new Map<
+      string,
+      { lessonTitle: string; summary: string | undefined; queries: string[] }
+    >();
     for (const lesson of lessons) {
       const assigned = lessonTopic.get(lesson.id);
-      if (!assigned) continue;
-      await fillTopicVideos(
-        admin,
-        assigned.topicId,
-        skillTitle,
-        lesson.title,
-        assigned.summary,
-        queryMap.get(lesson.index) ?? [lesson.title],
+      if (!assigned || topicFills.has(assigned.topicId)) continue;
+      topicFills.set(assigned.topicId, {
+        lessonTitle: lesson.title,
+        summary: assigned.summary,
+        queries: queryMap.get(lesson.index) ?? [lesson.title],
+      });
+    }
+
+    const fillResults = await Promise.allSettled(
+      [...topicFills.entries()].map(([topicId, f]) =>
+        fillTopicVideos(
+          admin,
+          topicId,
+          skillTitle,
+          f.lessonTitle,
+          f.summary,
+          f.queries,
+        ),
+      ),
+    );
+    for (const r of fillResults) {
+      if (r.status === "rejected") console.error("topic fill failed:", r.reason);
+    }
+    // If EVERY topic failed (e.g. a full rate-limit sweep), roll back so the
+    // learner can retry instead of getting a permanently-empty module. A
+    // partial success is kept.
+    if (
+      topicFills.size > 0 &&
+      fillResults.every((r) => r.status === "rejected")
+    ) {
+      throw (
+        (fillResults.find((r) => r.status === "rejected") as
+          | PromiseRejectedResult
+          | undefined
+        )?.reason ?? new Error("All topic fills failed")
       );
     }
 
-    // --- 3. Written resources: suggest → live-verify → store ----------------
-    try {
-      const suggestions = await suggestArticles({
-        skillTitle,
-        lessons: lessons.map((l) => ({ index: l.index, title: l.title })),
-      });
-      for (const s of suggestions.slice(0, lessons.length * ARTICLES_PER_LESSON)) {
-        const lesson = lessons.find((l) => l.index === s.lesson_index);
-        const assigned = lesson && lessonTopic.get(lesson.id);
-        if (!assigned) continue;
-        if (!(await verifyUrl(s.url))) continue; // never store an unverified link
-
-        await admin.from("resources").upsert(
-          {
-            topic_id: assigned.topicId,
-            kind: s.kind,
-            url: s.url,
-            title: s.title,
-            quality_score: 50,
-            status: "active",
-            last_verified_at: new Date().toISOString(),
-          },
-          { onConflict: "topic_id,url", ignoreDuplicates: true },
+    // --- 3. Written resources (optional) ------------------------------------
+    // Off by default: suggesting + live-verifying article URLs is slow
+    // (sequential HTTP checks) and videos are the core value. Enable with
+    // CURATE_ARTICLES=true on a platform without a tight function timeout.
+    if (process.env.CURATE_ARTICLES === "true") {
+      try {
+        const suggestions = await suggestArticles({
+          skillTitle,
+          lessons: lessons.map((l) => ({ index: l.index, title: l.title })),
+        });
+        await Promise.all(
+          suggestions
+            .slice(0, lessons.length * ARTICLES_PER_LESSON)
+            .map(async (s) => {
+              const lesson = lessons.find((l) => l.index === s.lesson_index);
+              const assigned = lesson && lessonTopic.get(lesson.id);
+              if (!assigned) return;
+              if (!(await verifyUrl(s.url))) return; // never store an unverified link
+              await admin.from("resources").upsert(
+                {
+                  topic_id: assigned.topicId,
+                  kind: s.kind,
+                  url: s.url,
+                  title: s.title,
+                  quality_score: 50,
+                  status: "active",
+                  last_verified_at: new Date().toISOString(),
+                },
+                { onConflict: "topic_id,url", ignoreDuplicates: true },
+              );
+            }),
         );
+      } catch (err) {
+        console.error("article suggestions failed (non-fatal):", err);
       }
-    } catch (err) {
-      console.error("article suggestions failed (non-fatal):", err);
     }
 
     // --- 4. Link each lesson to the best of its topic's pool ----------------
-    for (const lesson of lessons) {
-      const assigned = lessonTopic.get(lesson.id);
-      if (!assigned) continue;
-      await linkLessonResources(admin, lesson.id, assigned.topicId);
-    }
+    await Promise.all(
+      lessons.map((lesson) => {
+        const assigned = lessonTopic.get(lesson.id);
+        return assigned
+          ? linkLessonResources(admin, lesson.id, assigned.topicId)
+          : Promise.resolve();
+      }),
+    );
 
     await admin.from("modules").update({ hydration_status: "hydrated" }).eq("id", moduleId);
   } catch (err) {

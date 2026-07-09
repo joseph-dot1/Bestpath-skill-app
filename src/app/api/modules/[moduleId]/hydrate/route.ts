@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { isLlmConfigured, LLM_NOT_CONFIGURED_MESSAGE } from "@/lib/llm";
+import {
+  isLlmConfigured,
+  llmErrorMessage,
+  LLM_NOT_CONFIGURED_MESSAGE,
+} from "@/lib/llm";
 import { hydrateModule } from "@/lib/curation/pipeline";
 import { canAccessLevel, getUserTier } from "@/lib/entitlements";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -75,8 +79,8 @@ export async function POST(
   } catch (err) {
     console.error(`hydration failed for module ${moduleId}:`, err);
     return NextResponse.json(
-      { error: "Hydration failed — please retry." },
-      { status: 500 },
+      { error: llmErrorMessage(err, "Hydration failed — please retry.") },
+      { status: 503 },
     );
   }
 }
