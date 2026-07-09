@@ -222,10 +222,13 @@ export async function hydrateModule(admin: Admin, moduleId: string): Promise<voi
         .eq("id", lesson.id);
     }
 
-    // --- 2. Fill video pools for unique topics, IN PARALLEL -----------------
-    // Multiple lessons can share a topic; fill each unique topic once. Running
-    // the fills concurrently keeps the whole module well inside the 60s
-    // serverless limit on Vercel's free plan.
+    // --- 2. Fill video pools for unique topics, ONE AT A TIME ---------------
+    // Multiple lessons can share a topic; fill each unique topic once. These
+    // run *serially*, not in parallel: each fill makes an LLM re-rank call, and
+    // the free Gemini tier limits requests-per-minute and bursts. Firing all
+    // topics at once tripped a rate-limit sweep ("the free AI tier is busy").
+    // Serial spreads the calls out; a whole module still finishes in ~25-35s,
+    // well inside Vercel's 60s free-tier function limit.
     const queryMap = await generateSearchQueries({
       skillTitle,
       lessons: lessons.map((l) => ({ index: l.index, title: l.title })),
@@ -245,20 +248,22 @@ export async function hydrateModule(admin: Admin, moduleId: string): Promise<voi
       });
     }
 
-    const fillResults = await Promise.allSettled(
-      [...topicFills.entries()].map(([topicId, f]) =>
-        fillTopicVideos(
+    const fillResults: PromiseSettledResult<void>[] = [];
+    for (const [topicId, f] of topicFills) {
+      try {
+        await fillTopicVideos(
           admin,
           topicId,
           skillTitle,
           f.lessonTitle,
           f.summary,
           f.queries,
-        ),
-      ),
-    );
-    for (const r of fillResults) {
-      if (r.status === "rejected") console.error("topic fill failed:", r.reason);
+        );
+        fillResults.push({ status: "fulfilled", value: undefined });
+      } catch (reason) {
+        console.error("topic fill failed:", reason);
+        fillResults.push({ status: "rejected", reason });
+      }
     }
     // If EVERY topic failed (e.g. a full rate-limit sweep), roll back so the
     // learner can retry instead of getting a permanently-empty module. A
