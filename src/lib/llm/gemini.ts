@@ -107,11 +107,16 @@ const RETRY_DELAYS_MS = [3_000, 8_000];
 
 /** Thrown when the free tier is rate-limited even after retries. */
 export class RateLimitedError extends Error {
-  constructor() {
-    super("The free AI tier is busy right now. Wait a few seconds and try again.");
+  constructor(
+    message = "The free AI tier is busy right now. Wait a few seconds and try again.",
+  ) {
+    super(message);
     this.name = "RateLimitedError";
   }
 }
+
+const DAILY_QUOTA_MESSAGE =
+  "Today's free AI quota is used up — it resets at midnight Pacific time (early morning in Nigeria). You can also add a paid key to continue now.";
 
 async function callWithRetry(url: string, body: object): Promise<Response> {
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
@@ -124,8 +129,12 @@ async function callWithRetry(url: string, body: object): Promise<Response> {
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(60_000),
     });
-    // Free-tier rate limits (RPM) surface as 429 — back off and retry.
+    // Free-tier rate limits surface as 429 — back off and retry, UNLESS the
+    // response says the *daily* quota is exhausted, where retrying in seconds
+    // is pointless and "try again shortly" would be a lie.
     if (res.status === 429 || res.status === 503) {
+      const detail = await res.text().catch(() => "");
+      if (/PerDay/i.test(detail)) throw new RateLimitedError(DAILY_QUOTA_MESSAGE);
       if (attempt < RETRY_DELAYS_MS.length) {
         await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
         continue;

@@ -7,6 +7,7 @@ import {
   rerankCandidates,
   suggestArticles,
   verifyUrl,
+  type TopicAssignment,
 } from "./ai";
 import {
   getChannelSubscribers,
@@ -19,6 +20,15 @@ type Admin = SupabaseClient;
 
 const VIDEOS_PER_LESSON = 3;
 const ARTICLES_PER_LESSON = 2;
+
+/** Deterministic slug for the no-AI topic fallback (same title → same pool). */
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
 const MIN_VIEWS = 5_000;
 const MIN_DURATION_S = 150; // filter shorts/teasers
 const MAX_DURATION_S = 3 * 3600;
@@ -96,14 +106,23 @@ async function fillTopicVideos(
   );
   if (details.length === 0) return;
 
-  // 3. Channel authority + model relevance.
+  // 3. Channel authority + model relevance. The re-rank is a *nice-to-have*:
+  // if the free AI tier is busy, fall back to a neutral relevance so the
+  // stats-based score (views, recency, authority, likes) decides alone —
+  // the videos are still real, live-verified, and quality-filtered.
   const subs = await getChannelSubscribers(details.map((d) => d.channelId));
-  const relevance = await rerankCandidates({
-    skillTitle,
-    lessonTitle,
-    summary: lessonSummary,
-    candidates: details,
-  });
+  let relevance: Map<string, number>;
+  try {
+    relevance = await rerankCandidates({
+      skillTitle,
+      lessonTitle,
+      summary: lessonSummary,
+      candidates: details,
+    });
+  } catch (err) {
+    console.error(`re-rank unavailable for "${lessonTitle}" — using stats-only ranking:`, err);
+    relevance = new Map(details.map((d) => [d.videoId, 6]));
+  }
 
   // 4. Score, keep the best, store in the shared pool.
   const scored = details
@@ -184,15 +203,38 @@ export async function hydrateModule(admin: Admin, moduleId: string): Promise<voi
       .limit(200);
     const topicBySlug = new Map((existingTopics ?? []).map((t) => [t.slug, t]));
 
-    const assignments = await mapLessonsToTopics({
-      skillTitle,
-      moduleTitle: mod.title,
-      objectives: (mod.objectives as string[]) ?? [],
-      lessons: lessons.map((l) => ({ index: l.index, title: l.title })),
-      existingTopics: (existingTopics ?? []).map((t) => ({ slug: t.slug, title: t.title })),
-    });
-
+    // Mappings persist on the lesson rows, so a retry after a partial failure
+    // reuses them instead of re-spending AI quota on work already done.
     const lessonTopic = new Map<string, { topicId: string; summary: string }>();
+    for (const l of lessons) {
+      if (l.topic_id) lessonTopic.set(l.id, { topicId: l.topic_id, summary: l.summary ?? "" });
+    }
+    const unmapped = lessons.filter((l) => !l.topic_id);
+
+    let assignments: TopicAssignment[] = [];
+    if (unmapped.length > 0) {
+      try {
+        assignments = await mapLessonsToTopics({
+          skillTitle,
+          moduleTitle: mod.title,
+          objectives: (mod.objectives as string[]) ?? [],
+          lessons: unmapped.map((l) => ({ index: l.index, title: l.title })),
+          existingTopics: (existingTopics ?? []).map((t) => ({ slug: t.slug, title: t.title })),
+        });
+      } catch (err) {
+        // AI busy → derive topics from the lesson titles themselves. Slugs are
+        // deterministic, so learners with the same lesson titles still share a
+        // resource pool; the summary stays empty rather than made up.
+        console.error("topic mapping unavailable — deriving topics from lesson titles:", err);
+        assignments = unmapped.map((l) => ({
+          lesson_index: l.index,
+          topic_slug: slugify(l.title),
+          topic_title: l.title,
+          summary: "",
+        }));
+      }
+    }
+
     for (const a of assignments) {
       const lesson = lessons.find((l) => l.index === a.lesson_index);
       if (!lesson) continue;
@@ -218,7 +260,7 @@ export async function hydrateModule(admin: Admin, moduleId: string): Promise<voi
       lessonTopic.set(lesson.id, { topicId: topic.id, summary: a.summary });
       await admin
         .from("lessons")
-        .update({ topic_id: topic.id, summary: a.summary })
+        .update({ topic_id: topic.id, summary: a.summary || null })
         .eq("id", lesson.id);
     }
 
@@ -229,10 +271,20 @@ export async function hydrateModule(admin: Admin, moduleId: string): Promise<voi
     // topics at once tripped a rate-limit sweep ("the free AI tier is busy").
     // Serial spreads the calls out; a whole module still finishes in ~25-35s,
     // well inside Vercel's 60s free-tier function limit.
-    const queryMap = await generateSearchQueries({
-      skillTitle,
-      lessons: lessons.map((l) => ({ index: l.index, title: l.title })),
-    });
+    let queryMap: Map<number, string[]>;
+    try {
+      queryMap = await generateSearchQueries({
+        skillTitle,
+        lessons: lessons.map((l) => ({ index: l.index, title: l.title })),
+      });
+    } catch (err) {
+      // AI busy → a plain "<skill> <lesson> tutorial" search still finds good
+      // videos; the stats filter and scoring do the quality work.
+      console.error("query generation unavailable — using lesson-title queries:", err);
+      queryMap = new Map(
+        lessons.map((l) => [l.index, [`${skillTitle} ${l.title} tutorial`]]),
+      );
+    }
 
     const topicFills = new Map<
       string,
