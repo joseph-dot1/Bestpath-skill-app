@@ -95,7 +95,7 @@ export default async function DashboardPage() {
 
       <ul className="mt-6 space-y-4">
         {cards.map((card) => (
-          <li key={card.id} className="rounded-2xl border border-border bg-surface p-5">
+          <li key={card.id} className="card-lift rounded-2xl border border-border bg-surface p-5">
             <div className="flex items-center justify-between gap-3">
               <Link
                 href={`/skills/${card.id}`}
@@ -166,7 +166,7 @@ function ProgressRow({ standing }: { standing: PlanStanding }) {
     <div className="mt-3 flex items-center gap-3 text-xs text-muted">
       <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-border">
         <span
-          className="block h-full rounded-full bg-accent"
+          className="block h-full rounded-full bg-gradient-to-r from-accent/70 to-accent-strong transition-[width] duration-500"
           style={{ width: `${pct}%` }}
         />
       </span>
@@ -180,7 +180,7 @@ function ProgressRow({ standing }: { standing: PlanStanding }) {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center py-16 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-surface text-2xl">
+      <div className="glow-accent flex h-14 w-14 items-center justify-center rounded-2xl border border-accent/30 bg-surface text-2xl">
         🧭
       </div>
       <h1 className="font-display mt-6 text-2xl font-bold">

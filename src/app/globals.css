@@ -33,7 +33,13 @@ html {
 }
 
 body {
-  background: var(--background);
+  /* Ambient lime glow bleeding in from the top — gives every page depth
+     without any per-page work. */
+  background:
+    radial-gradient(90rem 42rem at 50% -18rem, rgb(180 242 76 / 0.07), transparent 70%),
+    radial-gradient(60rem 40rem at 110% 110%, rgb(180 242 76 / 0.04), transparent 70%),
+    var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-body), system-ui, sans-serif;
 }
@@ -43,6 +49,73 @@ body {
   color: var(--accent-ink);
 }
 
+/* Slim themed scrollbar (WebKit/Blink; Firefox picks up scrollbar-color). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+  border: 2px solid var(--background);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #37412f;
+}
+
+/* --- Reusable visual utilities ------------------------------------------ */
+
+/* Subtle dot-grid texture for feature panels. */
+.bg-dots {
+  background-image: radial-gradient(rgb(238 242 236 / 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Cards that lift toward the light on hover. */
+.card-lift {
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow:
+    0 12px 32px -14px rgb(180 242 76 / 0.22),
+    0 4px 16px -8px rgb(0 0 0 / 0.5);
+}
+
+/* Lime gradient text for hero moments. */
+.text-gradient-accent {
+  background: linear-gradient(100deg, var(--accent) 10%, var(--accent-strong) 55%, #eaffc0 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Soft glow behind key elements. */
+.glow-accent {
+  box-shadow: 0 0 48px -8px rgb(180 242 76 / 0.35);
+}
+
+/* Roadmap-visual labels: the SVG scales with viewport width, so labels get a
+   larger font on phones to stay legible after scaling. */
+.rv-label {
+  font-size: 22px;
+}
+@media (min-width: 640px) {
+  .rv-label {
+    font-size: 13px;
+  }
+}
+
+/* --- Animation ----------------------------------------------------------- */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -51,5 +124,67 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease both;
+}
+
+/* The hero roadmap draws itself on load (pathLength is normalized to 1). */
+@keyframes drawPath {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.animate-draw-path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: drawPath 2.2s ease-out 0.4s forwards;
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+.animate-floaty {
+  animation: floaty 4.5s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.6);
+  }
+}
+.animate-pulse-dot {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: pulseDot 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-draw-path,
+  .animate-floaty,
+  .animate-pulse-dot {
+    animation: none;
+  }
+  .animate-draw-path {
+    stroke-dashoffset: 0;
+  }
+  .card-lift,
+  .card-lift:hover {
+    transform: none;
   }
 }
