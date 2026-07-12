@@ -50,8 +50,10 @@ export function scoreVideo(
   const authority = Math.min(1, Math.log10(channelSubs + 1) / 7);
   const relevance = relevance0to10 / 10;
 
+  // Mentor-picked over merely popular: relevance (stage + lesson fit as
+  // judged by the model) dominates; views alone can't carry a video in.
   return Math.round(
-    100 * (0.35 * relevance + 0.2 * recency + 0.2 * views + 0.15 * authority + 0.1 * likeRatio),
+    100 * (0.45 * relevance + 0.2 * recency + 0.15 * views + 0.1 * authority + 0.1 * likeRatio),
   );
 }
 
@@ -64,6 +66,7 @@ async function fillTopicVideos(
   admin: Admin,
   topicId: string,
   skillTitle: string,
+  stage: string,
   lessonTitle: string,
   lessonSummary: string | undefined,
   queries: string[],
@@ -90,9 +93,9 @@ async function fillTopicVideos(
     } catch (err) {
       console.error(`search failed for "${query}":`, err);
     }
-    // One good search is usually enough — only fall back to the next query if
-    // the first returned nothing. Keeps hydration inside serverless limits.
-    if (candidates.length > 0) break;
+    // Searches are cheap on time (one HTTP call) — keep going until the
+    // pool is deep enough for a real choice, then stop to save API quota.
+    if (candidates.length >= 8) break;
   }
   if (candidates.length === 0) return;
 
@@ -115,6 +118,7 @@ async function fillTopicVideos(
   try {
     relevance = await rerankCandidates({
       skillTitle,
+      stage,
       lessonTitle,
       summary: lessonSummary,
       candidates: details,
@@ -125,15 +129,26 @@ async function fillTopicVideos(
   }
 
   // 4. Score, keep the best, store in the shared pool.
-  const scored = details
+  const ranked = details
     .map((v) => ({
       video: v,
       score: scoreVideo(v, subs.get(v.channelId) ?? 0, relevance.get(v.videoId) ?? 0),
       relevance: relevance.get(v.videoId) ?? 0,
     }))
-    .filter((s) => s.relevance >= 5) // never store off-topic videos
-    .sort((a, b) => b.score - a.score)
-    .slice(0, VIDEOS_PER_LESSON + 2); // a couple of spares for replacements
+    .filter((s) => s.relevance >= 6) // mentor bar: only videos worth assigning
+    .sort((a, b) => b.score - a.score);
+
+  // Diversify: at most 2 videos per channel, so a lesson never becomes one
+  // creator's playlist and the learner sees more than one teaching style.
+  const perChannel = new Map<string, number>();
+  const scored: typeof ranked = [];
+  for (const s of ranked) {
+    const n = perChannel.get(s.video.channelId) ?? 0;
+    if (n >= 2) continue;
+    perChannel.set(s.video.channelId, n + 1);
+    scored.push(s);
+    if (scored.length >= VIDEOS_PER_LESSON + 2) break; // spares for replacements
+  }
 
   if (scored.length === 0) return;
 
@@ -171,7 +186,7 @@ export async function hydrateModule(admin: Admin, moduleId: string): Promise<voi
     .select(
       `id, title, objectives, hydration_status,
        lessons ( id, index, title, topic_id, summary ),
-       levels!inner ( roadmaps!inner ( enrollments!inner ( skill_id, skills ( id, title ) ) ) )`,
+       levels!inner ( name, roadmaps!inner ( enrollments!inner ( skill_id, skills ( id, title ) ) ) )`,
     )
     .eq("id", moduleId)
     .single();
@@ -186,6 +201,9 @@ export async function hydrateModule(admin: Admin, moduleId: string): Promise<voi
     const enrollment = (mod as any).levels?.roadmaps?.enrollments;
     const skillId: string = enrollment?.skill_id;
     const skillTitle: string = enrollment?.skills?.title ?? "the skill";
+    // The level name IS the learner's stage (Beginner/Intermediate/...) —
+    // it steers both search queries and the mentor re-rank.
+    const stage: string = (mod as any).levels?.name ?? "Beginner";
     /* eslint-enable @typescript-eslint/no-explicit-any */
     if (!skillId) throw new Error("could not resolve skill for module");
 
@@ -275,6 +293,7 @@ export async function hydrateModule(admin: Admin, moduleId: string): Promise<voi
     try {
       queryMap = await generateSearchQueries({
         skillTitle,
+        stage,
         lessons: lessons.map((l) => ({ index: l.index, title: l.title })),
       });
     } catch (err) {
@@ -307,6 +326,7 @@ export async function hydrateModule(admin: Admin, moduleId: string): Promise<voi
           admin,
           topicId,
           skillTitle,
+          stage,
           f.lessonTitle,
           f.summary,
           f.queries,

@@ -36,7 +36,23 @@ export default async function AppLayout({
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/75 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-4">
-          <Logo href="/dashboard" />
+          <div className="flex items-center gap-5">
+            <Logo href="/dashboard" />
+            <nav className="flex items-center gap-4 text-sm">
+              <Link
+                href="/"
+                className="text-muted transition-colors hover:text-foreground"
+              >
+                Home
+              </Link>
+              <Link
+                href="/dashboard"
+                className="text-muted transition-colors hover:text-foreground"
+              >
+                Dashboard
+              </Link>
+            </nav>
+          </div>
           <div className="flex items-center gap-4">
             <Link
               href="/profile"

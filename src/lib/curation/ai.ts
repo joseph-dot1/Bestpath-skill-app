@@ -88,6 +88,7 @@ Output JSON only.`,
 // ---------------------------------------------------------------------------
 export async function generateSearchQueries(input: {
   skillTitle: string;
+  stage: string;
   lessons: { index: number; title: string }[];
 }): Promise<Map<number, string[]>> {
   const schema = {
@@ -113,11 +114,17 @@ export async function generateSearchQueries(input: {
   const { queries } = await fastJson<{
     queries: { lesson_index: number; search_queries: string[] }[];
   }>(
-    `You write YouTube search queries for skill-learning lessons. For each lesson produce exactly 2 queries:
-- Query 1: the most direct phrasing a great tutorial would use in its title.
-- Query 2: a distinct alternative angle (different phrasing, "tutorial for beginners", or the key tool name).
+    `You are a working professional curating YouTube for your students. Each lesson belongs to a specific STAGE of the learner's journey — the queries must find videos pitched at that stage, not generic ones.
+
+For each lesson produce exactly 2 queries:
+- Query 1: the phrasing the best dedicated tutorial at this stage would use in its title. For early stages append phrases like "for beginners" or "step by step"; for later stages use "advanced", "workflow", "masterclass", or the professional term of art.
+- Query 2: a distinct angle — the key tool's name, a project-based phrasing ("build/edit/design X"), or an alternative term professionals use.
 Keep queries short (3-8 words). English. No quotes or operators. Output JSON only.`,
-    JSON.stringify({ skill: input.skillTitle, lessons: input.lessons }),
+    JSON.stringify({
+      skill: input.skillTitle,
+      learner_stage: input.stage,
+      lessons: input.lessons,
+    }),
     schema,
   );
 
@@ -140,6 +147,7 @@ export type CandidateForRank = {
 
 export async function rerankCandidates(input: {
   skillTitle: string;
+  stage: string;
   lessonTitle: string;
   summary?: string;
   candidates: CandidateForRank[];
@@ -167,14 +175,15 @@ export async function rerankCandidates(input: {
   const { scores } = await fastJson<{
     scores: { video_id: string; relevance: number }[];
   }>(
-    `You judge how well a YouTube video teaches a specific lesson, from its real title/description metadata. Score each candidate 0-10:
-- 9-10: squarely teaches this exact lesson.
-- 6-8: covers the lesson within broader content.
-- 3-5: related but not focused on the lesson.
-- 0-2: off-topic, clickbait, product promo, or not a tutorial.
-Score every candidate. Output JSON only.`,
+    `You are a senior professional in this skill, hand-picking the ONE OR TWO videos you would give your own student for this exact lesson at this exact stage of their journey. The learner is escaping "tutorial hell" — random videos that entertain but don't move them forward. Judge each candidate from its real title/description metadata. Score 0-10:
+- 9-10: exactly what a mentor would assign — squarely teaches this lesson, pitched at this stage, structured teaching (clear topic, steps or a real project), from someone who plainly knows the craft.
+- 6-8: solid teaching of this lesson but imperfect fit — slightly off-stage (too basic/advanced), covers it inside broader content, or weaker structure.
+- 3-5: related but would NOT move this learner forward right now — wrong stage, tangential topic, talky vlog with thin instruction.
+- 0-2: off-topic, clickbait ("I made $10k…", "STOP doing this"), product promo, gear/software reviews, drama, or not a tutorial at all.
+Be strict: a video can be popular and still score 3. Stage fit matters as much as topic fit. Score every candidate. Output JSON only.`,
     JSON.stringify({
       skill: input.skillTitle,
+      learner_stage: input.stage,
       lesson: input.lessonTitle,
       lesson_summary: input.summary ?? "",
       candidates: input.candidates.map((c) => ({

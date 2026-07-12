@@ -51,18 +51,30 @@ async function getEarnings(): Promise<EarningRow[]> {
 
 export default async function Home() {
   const earnings = await getEarnings();
+  // Signed-in visitors get a way back into the app, not a "Sign in" dead end.
+  const supabase = await createClient();
+  const user = supabase ? (await supabase.auth.getUser()).data.user : null;
 
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/75 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-4">
           <Logo />
-          <Link
-            href="/login"
-            className="rounded-full border border-border px-4 py-1.5 text-sm text-muted transition-colors hover:border-accent hover:text-foreground"
-          >
-            Sign in
-          </Link>
+          {user ? (
+            <Link
+              href="/dashboard"
+              className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-strong"
+            >
+              Dashboard →
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full border border-border px-4 py-1.5 text-sm text-muted transition-colors hover:border-accent hover:text-foreground"
+            >
+              Sign in
+            </Link>
+          )}
         </div>
       </header>
 
