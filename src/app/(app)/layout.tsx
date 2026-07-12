@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
@@ -24,6 +25,12 @@ export default async function AppLayout({
     .single();
 
   const name = profile?.display_name ?? user.email ?? "there";
+  const initials = name
+    .split(/\s+/)
+    .map((w: string) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <div className="flex flex-1 flex-col">
@@ -31,7 +38,18 @@ export default async function AppLayout({
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-4">
           <Logo href="/dashboard" />
           <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-muted sm:inline">{name}</span>
+            <Link
+              href="/profile"
+              className="group flex items-center gap-2"
+              title="Your profile"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent-strong text-[10px] font-bold text-accent-ink transition-transform group-hover:scale-110">
+                {initials}
+              </span>
+              <span className="hidden text-sm text-muted transition-colors group-hover:text-foreground sm:inline">
+                {name}
+              </span>
+            </Link>
             <form action="/auth/signout" method="post">
               <button
                 type="submit"
