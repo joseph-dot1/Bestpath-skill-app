@@ -96,7 +96,13 @@ export function MarketSnapshot({ skillId }: { skillId: string }) {
 
 function PayCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-accent/30 bg-surface p-4">
+    <div className="relative overflow-hidden rounded-2xl border border-accent/30 bg-surface p-4">
+      <span
+        aria-hidden
+        className="font-display pointer-events-none absolute -bottom-4 -right-1 text-7xl font-bold text-accent/5"
+      >
+        ₦
+      </span>
       <p className="text-xs font-semibold uppercase tracking-wide text-accent">
         {label}
       </p>

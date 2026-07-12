@@ -59,7 +59,7 @@ export function RoadmapView({
           <span className="ml-auto flex items-center gap-2">
             <span className="h-1.5 w-24 overflow-hidden rounded-full bg-border">
               <span
-                className="block h-full rounded-full bg-accent"
+                className="block h-full rounded-full bg-gradient-to-r from-accent/70 to-accent-strong"
                 style={{ width: `${pct}%` }}
               />
             </span>
@@ -69,7 +69,11 @@ export function RoadmapView({
       </div>
 
       {/* Levels as a vertical path */}
-      <ol className="relative mt-8 space-y-6 border-l border-border pl-6">
+      <ol className="relative mt-8 space-y-6 pl-6">
+        <span
+          aria-hidden
+          className="absolute left-0 top-1 h-full w-px bg-gradient-to-b from-accent via-border to-border"
+        />
         {levels.map((level) => {
           const locked = !level.is_free && !isPro;
           return (
@@ -77,7 +81,7 @@ export function RoadmapView({
             <span
               className={`absolute -left-[31px] top-1 flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold ${
                 level.is_free
-                  ? "border-accent bg-accent text-accent-ink"
+                  ? "border-accent bg-accent text-accent-ink shadow-[0_0_16px_-2px_var(--accent)]"
                   : "border-border bg-surface text-muted"
               }`}
             >
@@ -118,7 +122,7 @@ export function RoadmapView({
                   <Link
                     key={mod.id}
                     href={`/modules/${mod.id}`}
-                    className="block rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-accent"
+                    className="card-lift block rounded-2xl border border-border bg-surface p-4"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <h3 className="text-sm font-semibold">{mod.title}</h3>
@@ -149,7 +153,7 @@ export function RoadmapView({
               {locked ? (
                 <Link
                   href="/upgrade"
-                  className="block rounded-2xl border border-accent/40 bg-surface p-4 text-center transition-colors hover:border-accent"
+                  className="card-lift block rounded-2xl border border-accent/40 bg-surface p-4 text-center"
                 >
                   <p className="text-sm font-semibold">
                     🔓 Unlock {level.name} with{" "}
@@ -163,7 +167,7 @@ export function RoadmapView({
               ) : (
                 <Link
                   href={`/levels/${level.id}/checkpoint`}
-                  className="block rounded-2xl border border-dashed border-border bg-surface/50 p-4 transition-colors hover:border-accent"
+                  className="card-lift block rounded-2xl border border-dashed border-border bg-surface/50 p-4"
                 >
                   <p className="text-sm font-semibold">
                     🏁 Prove it — {level.name} checkpoint

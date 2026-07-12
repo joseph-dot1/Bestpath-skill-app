@@ -63,7 +63,7 @@ export function QuizCta({ moduleId }: { moduleId: string }) {
   return (
     <a
       href={`/modules/${moduleId}/quiz`}
-      className="mt-6 block rounded-2xl border border-accent/40 bg-surface p-4 text-center transition-colors hover:border-accent"
+      className="card-lift mt-6 block rounded-2xl border border-accent/40 bg-surface p-4 text-center"
     >
       <p className="font-display text-sm font-semibold">
         Finished the lessons? <span className="text-accent">Take the quiz →</span>
@@ -102,7 +102,7 @@ function LessonCard({
   return (
     <li
       className={`rounded-2xl border bg-surface p-4 transition-colors ${
-        completed ? "border-accent/40" : "border-border"
+        completed ? "border-accent/40 bg-accent/[0.03]" : "border-border"
       }`}
     >
       <div className="flex items-start gap-3">
@@ -188,11 +188,16 @@ function ResourceCard({
 
   return (
     <div
-      className={`flex items-center gap-3 rounded-xl border border-border bg-surface-raised p-3 transition-opacity ${
+      className={`flex items-center gap-3 rounded-xl border border-border bg-surface-raised p-3 transition-[opacity,border-color] hover:border-accent/40 ${
         swapping ? "opacity-40" : ""
       }`}
     >
-      <span className="shrink-0 text-lg" aria-hidden>
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm ${
+          isVideo ? "bg-accent/10 text-accent" : "bg-surface text-muted"
+        }`}
+        aria-hidden
+      >
         {isVideo ? "▶" : "📄"}
       </span>
       <a
