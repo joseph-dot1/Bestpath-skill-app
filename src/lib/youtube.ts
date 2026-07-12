@@ -77,8 +77,12 @@ export type VideoDetails = {
   embeddable: boolean;
 };
 
-/** search.list — 100 units. */
-export async function searchVideos(query: string, maxResults = 8): Promise<SearchResult[]> {
+/** search.list — 100 units. Pass channelId to search inside one channel. */
+export async function searchVideos(
+  query: string,
+  maxResults = 8,
+  channelId?: string,
+): Promise<SearchResult[]> {
   type Raw = {
     items?: {
       id?: { videoId?: string };
@@ -100,6 +104,7 @@ export async function searchVideos(query: string, maxResults = 8): Promise<Searc
       relevanceLanguage: "en",
       videoEmbeddable: "true",
       order: "relevance",
+      ...(channelId ? { channelId } : {}),
     },
     100,
   );

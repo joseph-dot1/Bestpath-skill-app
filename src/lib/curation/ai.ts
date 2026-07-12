@@ -255,6 +255,102 @@ Output JSON only.`,
   return suggestions;
 }
 
+// ---------------------------------------------------------------------------
+// 5. Respected-educator suggestions per skill. Names only — every name is
+//    then used as a SEARCH SEED against the real YouTube API, so a wrong
+//    name simply finds nothing; nothing is fabricated into the product.
+// ---------------------------------------------------------------------------
+export type CreatorSuggestion = { channel_name: string; note: string };
+
+export async function suggestCreators(
+  skillTitle: string,
+): Promise<CreatorSuggestion[]> {
+  const schema = {
+    type: "object",
+    properties: {
+      creators: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            channel_name: { type: "string" },
+            note: { type: "string" },
+          },
+          required: ["channel_name", "note"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["creators"],
+    additionalProperties: false,
+  };
+
+  const { creators } = await fastJson<{ creators: CreatorSuggestion[] }>(
+    `You know the professional landscape of online skill education. List the YouTube educators that WORKING PROFESSIONALS in this field genuinely respect and recommend to newcomers — the names that come up when practitioners are asked "who should I learn from?".
+
+Rules:
+- 5-8 names. Only creators you are confident actually teach this skill on YouTube.
+- Prioritize practitioners who teach from real client/job experience over content-mill channels.
+- Include respected African/Nigerian educators in this field when they exist — this platform serves Nigerian learners first.
+- "note" = one short sentence on why professionals rate them.
+Output JSON only.`,
+    JSON.stringify({ skill: skillTitle }),
+    schema,
+  );
+  return creators.slice(0, 8);
+}
+
+// ---------------------------------------------------------------------------
+// 6. "Professional toolkit": the adjacent competencies every working
+//    professional in this field needs (e.g. time management for social media
+//    managers). Rendered as an optional section on the roadmap.
+// ---------------------------------------------------------------------------
+export type ToolkitCompetency = {
+  slug: string;
+  title: string;
+  why: string;
+  search_query: string;
+};
+
+export async function suggestToolkit(
+  skillTitle: string,
+): Promise<ToolkitCompetency[]> {
+  const schema = {
+    type: "object",
+    properties: {
+      competencies: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            slug: { type: "string" },
+            title: { type: "string" },
+            why: { type: "string" },
+            search_query: { type: "string" },
+          },
+          required: ["slug", "title", "why", "search_query"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["competencies"],
+    additionalProperties: false,
+  };
+
+  const { competencies } = await fastJson<{ competencies: ToolkitCompetency[] }>(
+    `You are a senior professional in this field mentoring someone who wants to EARN with this skill, not just learn it. List the 4 adjacent competencies that most often separate working professionals from hobbyists — things like client communication, pricing/negotiation, time management and organization, portfolio building, or personal branding, chosen for THIS specific field.
+
+- "slug": lowercase-hyphenated, stable (e.g. "client-communication").
+- "title": short human label.
+- "why": one sentence on why this matters for earning in this field (Nigerian freelance/job market context welcome).
+- "search_query": the YouTube search (3-8 words) that finds a genuinely good practical video on it for this profession.
+Output JSON only.`,
+    JSON.stringify({ skill: skillTitle }),
+    schema,
+  );
+  return competencies.slice(0, 4);
+}
+
 /** Live-verify a suggested URL. Returns true only for a reachable page. */
 export async function verifyUrl(url: string): Promise<boolean> {
   try {

@@ -24,6 +24,8 @@ npm install
    1. `supabase/migrations/0001_init.sql`
    2. `supabase/migrations/0002_api_usage_fn.sql`
    3. `supabase/migrations/0003_plan_anchor.sql`
+   4. `supabase/migrations/0004_skill_market.sql`
+   5. `supabase/migrations/0005_skill_creators.sql`
 3. Email sign-in is on by default, but Supabase's default email only contains
    a link — add the 6-digit code to it: **Authentication → Emails** (or
    "Email Templates") → **Magic Link** template → replace the body with:
