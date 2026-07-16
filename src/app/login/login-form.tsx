@@ -6,6 +6,22 @@ import { createClient } from "@/lib/supabase/client";
 
 type Stage = "email" | "code";
 
+/** Supabase auth errors can be cryptic or even empty ("{}"). Translate the
+    common ones into something a learner can act on. */
+function friendlyAuthError(message: string | undefined): string {
+  const m = (message ?? "").replace(/[{}]/g, "").trim();
+  if (!m || /error sending|sending magic link|unexpected_failure/i.test(m)) {
+    return "We couldn't send the email — the sender only allows a few sign-in emails per hour. Please wait ~1 hour and retry, or use 'Continue with Google' instead.";
+  }
+  if (/rate limit/i.test(m)) {
+    return "Email limit reached — only a few sign-in emails can go out per hour. Wait a bit and retry, or use 'Continue with Google'.";
+  }
+  if (/invalid|expired/i.test(m) ) {
+    return "That code is invalid or has expired — request a fresh one and try again.";
+  }
+  return m;
+}
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -37,7 +53,7 @@ export function LoginForm() {
       },
     });
     if (error) {
-      setError(error.message);
+      setError(friendlyAuthError(error.message));
       setBusy(false);
     }
     // On success the browser navigates away to Google.
@@ -59,7 +75,7 @@ export function LoginForm() {
     });
     setBusy(false);
     if (error) {
-      setError(error.message);
+      setError(friendlyAuthError(error.message));
     } else {
       setStage("code");
     }
@@ -76,7 +92,7 @@ export function LoginForm() {
       type: "email",
     });
     if (error) {
-      setError(error.message);
+      setError(friendlyAuthError(error.message));
       setBusy(false);
     } else {
       router.push(next);
