@@ -48,10 +48,19 @@ Your job: ask between ${MIN_QUESTIONS} and ${MAX_QUESTIONS} adaptive questions t
 2. Weekly time budget in hours (realistic, not aspirational — nudge them to be honest).
 3. End goal: get a job, earn freelance income, hobby, or certification — and any specifics (niche, timeline, target income).
 4. Preferred learning format mix: video-heavy, balanced, reading-heavy, or project-heavy.
-5. HARDWARE & TOOLS they have access to — critical for any skill that depends on specific software or a capable device (video editing, graphic design, 3D, music/audio production, heavy coding, data science). For these skills you MUST probe:
+5. HARDWARE & TOOLS they have access to — critical for any skill that depends on specific software or a capable device (video editing, graphic design, 3D, music/audio production, heavy coding, data science). For these skills you MUST probe, with SEPARATE, clear questions:
    a. What device do they work on — phone, tablet, laptop, or desktop? Many Nigerian learners only have a phone.
-   b. If laptop/desktop: roughly how powerful is it? Ask in plain terms they can answer — e.g. "How much RAM does it have (4GB, 8GB, 16GB+)?" or, if they don't know, "Does it feel fast or does it lag when you open a few programs?" and roughly how old it is. The point is to judge whether it can run heavy software like DaVinci Resolve or Adobe Premiere Pro (these realistically need ~8GB+ RAM and a fairly modern machine) versus needing a lighter/free tool like CapCut or a phone/cloud-based workflow.
-   c. Any tools they already have or pay for (e.g. "I have CapCut", "I can't afford Adobe").
+   b. If laptop/desktop, ask about RAM with concrete tappable options AND tell them how to check: e.g. "How much RAM does your laptop have? (On Windows: Settings → System → About. On Mac:  → About This Mac.)" with options like "4GB or less", "8GB", "16GB or more", "I'm not sure".
+   c. If they're not sure about RAM, ask a plain-behaviour question instead: "How does your laptop feel day to day?" with options like "Fast — handles anything", "Okay — fine with a few apps open", "Slow — lags when I open several apps or many browser tabs", plus roughly how old it is (under 3 years / 3-6 years / older).
+   d. Any tools they already have or pay for (e.g. "I have CapCut", "I can't afford Adobe").
+
+   Then classify device_power HONESTLY with this rubric:
+   - "high": 16GB+ RAM AND a reasonably modern machine (this is what heavy pro software actually needs).
+   - "mid": 8GB RAM and it runs fine day to day.
+   - "low": 4GB or less, OR they describe it as slow/laggy, OR it's 6+ years old — regardless of what the sticker says.
+   - "unknown": only when they genuinely couldn't tell you anything useful.
+   Do NOT be optimistic. An "8GB but it lags" laptop is "low". The roadmap builder uses this to pick software they can actually run — overrating their machine dooms them to frustration.
+
    For skills where hardware doesn't matter (copywriting, social media strategy, general prompt engineering), skip this — set device and device_power to "not_applicable".
 
 Rules:
@@ -62,7 +71,7 @@ Rules:
 - Finish as soon as you have all the needed dimensions with reasonable confidence (minimum ${MIN_QUESTIONS} questions asked). You MUST finish by question ${MAX_QUESTIONS}.
 - When finishing:
   - "summary": 2-4 sentences a curriculum designer would use to build this person's roadmap: what they know, gaps, hours/week, goal, format mix.
-  - "tools_context": one plain sentence describing their device and its capability, and any tool constraints — e.g. "Edits on a phone only, so recommend CapCut and mobile workflows" or "Has an 8GB laptop that can run DaVinci Resolve (free) but not comfortably Premiere Pro" or "Not applicable for this skill". This is read directly by the roadmap builder to choose tools they can actually run.
+  - "tools_context": one plain sentence describing their device and its capability, and any tool constraints — e.g. "Edits on a phone only, so recommend CapCut and mobile workflows" or "Has an 8GB laptop that runs okay — light desktop tools like CapCut Desktop are fine, but NOT heavy software like DaVinci Resolve or Premiere Pro" or "Not applicable for this skill". This is read directly by the roadmap builder to choose tools they can actually run.
   - Set "device" and "device_power" to your best judgement (use "not_applicable" when hardware is irrelevant to the skill, "unknown" when relevant but the learner couldn't say).`;
 
 const OUTPUT_SCHEMA = {

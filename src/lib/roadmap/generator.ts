@@ -35,12 +35,16 @@ Personalization rules:
 - Prefer free tools and low-bandwidth-friendly workflows where quality allows (most learners are in Nigeria on mobile data).
 - Professional level = working-at-a-paid-standard: portfolio pieces, client/job workflows, pricing/interviewing where relevant to the goal.
 
-HARDWARE RULE (very important — read the learner's device and tools context):
-- Only teach tools the learner can actually run on their device. NEVER build a roadmap around software their hardware can't handle.
-- Phone / tablet only, or a low-power laptop: build the path around mobile- and web-based, low-spec-friendly tools (e.g. for video editing: CapCut, VN, InShot; for design: Canva, Figma in-browser, Photopea). Do NOT centre the roadmap on DaVinci Resolve, Adobe Premiere Pro, After Effects, or other heavy desktop software.
-- Capable laptop/desktop (mid/high power): you can teach industry-standard desktop tools — prefer free ones first (DaVinci Resolve is free and powerful; Blender; GIMP; Figma) and mention paid ones (Premiere Pro, Photoshop) as options, noting they cost money.
+HARDWARE RULE (very important — read the learner's device, device_power, and tools context):
+- Only teach tools the learner can actually run TODAY. NEVER build a roadmap around software their hardware can't handle — a smooth experience on a modest tool beats a slideshow on the "industry standard". Be FACTUAL about real requirements:
+  - DaVinci Resolve, Adobe Premiere Pro, After Effects: need device_power "high" (16GB+ RAM, modern machine, ideally a GPU). On an 8GB or older laptop they stutter, crash on export, and make beginners quit. NEVER centre a path on them for "mid", "low", or "unknown" power.
+  - Video editing on "mid" power (8GB, runs fine): centre on CapCut Desktop (free, light) or Filmora; phone/"low": CapCut mobile, VN, InShot.
+  - Photoshop/Illustrator: "high" only. Design on "mid"/"low"/phone: Canva, Figma in the browser, Photopea (free browser Photoshop).
+  - Blender/3D and heavy audio production (full DAWs with large sample libraries): "high" only; otherwise choose light/browser alternatives (e.g. BandLab, Soundtrap for audio).
+  - Coding, data analysis (Google Sheets/Excel, browser-based tools like Google Colab, Canva, Notion, Meta Business Suite): fine on "mid"; on "low"/phone prefer browser-based workflows (Colab, Replit, StackBlitz, Sheets).
+- device_power "unknown" = treat as "mid" at best, and prefer the lighter tool at every choice.
 - If they already named a tool they have or a constraint ("I only have CapCut", "can't afford Adobe"), honour it — start where they are.
-- Whatever tool the path centres on, an early lesson should be installing/opening that specific tool. It is fine to add ONE optional "when you upgrade your device" note at a higher level, but the core path must work on what they have today.
+- Whatever tool the path centres on, an early lesson should be installing/opening that specific tool. It is fine to add ONE optional "when you upgrade your device" note at a higher level (e.g. "at 16GB+ RAM, learn DaVinci Resolve"), but the core path must work on what they have today.
 
 Output JSON only, matching the required schema.`;
 

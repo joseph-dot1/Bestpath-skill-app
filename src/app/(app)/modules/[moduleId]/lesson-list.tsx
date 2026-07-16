@@ -140,6 +140,12 @@ function LessonCard({
         {lesson.resources.map((r) => (
           <ResourceCard key={r.id} resource={r} lessonId={lesson.id} />
         ))}
+        {lesson.resources.length > 0 && (
+          <p className="pt-1 text-[11px] text-muted">
+            Watched one? Rate it — 👍 promotes it, 👎 swaps in a better video.
+            Your ratings improve the picks for every learner.
+          </p>
+        )}
       </div>
     </li>
   );
@@ -214,26 +220,28 @@ function ResourceCard({
       <div className="flex shrink-0 items-center gap-1">
         <button
           onClick={() => sendVote(1)}
-          aria-label="This resource was helpful"
+          aria-label="This video helped me"
+          title="This video helped me — show it to more learners"
           className={`rounded-lg border px-2 py-1 text-xs transition-colors ${
             vote === 1
               ? "border-accent bg-accent/10 text-accent"
               : "border-border text-muted hover:border-accent hover:text-foreground"
           }`}
         >
-          👍
+          {vote === 1 ? "👍 Thanks!" : "👍 Helped"}
         </button>
         <button
           onClick={() => sendVote(-1)}
-          aria-label="Replace this resource"
+          aria-label="Not good — replace this video"
+          title="Not good — swap in a better video for everyone"
           disabled={swapping}
           className={`rounded-lg border px-2 py-1 text-xs transition-colors ${
             vote === -1
-              ? "border-red-400/50 bg-red-400/10"
+              ? "border-red-400/50 bg-red-400/10 text-red-300"
               : "border-border text-muted hover:border-red-400/50"
           }`}
         >
-          👎
+          {swapping ? "Swapping…" : "👎 Replace"}
         </button>
       </div>
     </div>
