@@ -50,7 +50,7 @@ Your job: ask between ${MIN_QUESTIONS} and ${MAX_QUESTIONS} adaptive questions t
 4. Preferred learning format mix: video-heavy, balanced, reading-heavy, or project-heavy.
 5. HARDWARE & TOOLS they have access to — critical for any skill that depends on specific software or a capable device (video editing, graphic design, 3D, music/audio production, heavy coding, data science). For these skills you MUST probe, with SEPARATE, clear questions:
    a. What device do they work on — phone, tablet, laptop, or desktop? Many Nigerian learners only have a phone.
-   b. If laptop/desktop, ask about RAM with concrete tappable options AND tell them how to check: e.g. "How much RAM does your laptop have? (On Windows: Settings → System → About. On Mac:  → About This Mac.)" with options like "4GB or less", "8GB", "16GB or more", "I'm not sure".
+   b. If laptop/desktop, ask about RAM with concrete tappable options AND tell them how to check: e.g. "How much RAM does your laptop have? (On Windows: Settings > System > About. On Mac: Apple menu > About This Mac.)" with options like "4GB or less", "8GB", "16GB or more", "I'm not sure".
    c. If they're not sure about RAM, ask a plain-behaviour question instead: "How does your laptop feel day to day?" with options like "Fast — handles anything", "Okay — fine with a few apps open", "Slow — lags when I open several apps or many browser tabs", plus roughly how old it is (under 3 years / 3-6 years / older).
    d. Any tools they already have or pay for (e.g. "I have CapCut", "I can't afford Adobe").
 
@@ -175,15 +175,25 @@ export async function runAssessmentStep(
 
   // Fast tier: snappy interactive turns, and it keeps the reasoning model's
   // free-tier requests-per-minute headroom for roadmap generation right after.
-  const text = await generateStructured({
-    tier: "fast",
-    system: SYSTEM_PROMPT,
-    user: userMessage,
-    schema: OUTPUT_SCHEMA as unknown as Record<string, unknown>,
-    maxTokens: 1024,
-  });
+  const generate = () =>
+    generateStructured({
+      tier: "fast",
+      system: SYSTEM_PROMPT,
+      user: userMessage,
+      schema: OUTPUT_SCHEMA as unknown as Record<string, unknown>,
+      maxTokens: 1024,
+    });
 
-  const step = JSON.parse(text) as AssessmentStep;
+  let step: AssessmentStep;
+  try {
+    step = JSON.parse(await generate()) as AssessmentStep;
+  } catch (err) {
+    // A malformed response is worth one clean retry; a rate limit is not —
+    // retrying it just digs the hole deeper.
+    if (err instanceof Error && err.name === "RateLimitedError") throw err;
+    console.error("assessment step parse/generation failed, retrying once:", err);
+    step = JSON.parse(await generate()) as AssessmentStep;
+  }
 
   // Belt and braces: the schema constrains shape, not the question budget.
   if (step.action === "ask" && mustFinish) {

@@ -4,8 +4,12 @@ import {
   runAssessmentStep,
   type AssessmentTurn,
 } from "@/lib/assessment/engine";
-import { isLlmConfigured, LLM_NOT_CONFIGURED_MESSAGE } from "@/lib/llm";
+import { isLlmConfigured, llmErrorMessage, LLM_NOT_CONFIGURED_MESSAGE } from "@/lib/llm";
 import { createClient } from "@/lib/supabase/server";
+
+// Rate-limit backoff inside the LLM call can take ~15s; don't let the
+// platform's default timeout kill the request mid-retry.
+export const maxDuration = 60;
 
 /**
  * POST /api/assessment
@@ -64,8 +68,13 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("assessment step failed:", err);
     return NextResponse.json(
-      { error: "Something went wrong generating the next question. Please retry." },
-      { status: 500 },
+      {
+        error: llmErrorMessage(
+          err,
+          "Something went wrong generating the next question. Please retry.",
+        ),
+      },
+      { status: 503 },
     );
   }
 }
